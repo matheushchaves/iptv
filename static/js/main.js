@@ -898,8 +898,8 @@ function bootSteps(listReady, deskReady) {
   const fmt = (n) => n.toLocaleString("pt-BR");
   const now = Date.now();
   return [
-    { label: "Aparelho", value: deviceName() },
-    { label: "Servidor do Sofá", value: `${location.host} OK` },
+    { label: "Aparelho", value: deviceName(), retroOnly: true },
+    { label: "Servidor do Sofá", value: `${location.host} OK`, retroOnly: true },
     { label: "Lista", value: listReady.then(() => {
       const s = state.summary;
       if (!s) throw new Error("sem lista");
@@ -915,7 +915,15 @@ function bootSteps(listReady, deskReady) {
       if (!d.weather) throw new Error("sem tempo");
       return `${d.place.city}, ${d.weather.now.temp}°, ${weatherLook(d.weather.now.code, d.weather.now.day).text}`;
     }) },
-    { label: "Hacker News", value: deskReady.then((d) => (d.news && d.news.length ? `${d.news.length} manchetes` : "sem resposta")) },
+    { label: "Bolsa", value: deskReady.then((d) => {
+      const ibov = (d.b3 || []).find((q) => q.symbol === "IBOV");
+      if (!ibov) throw new Error("sem bolsa");
+      return `Ibovespa ${Math.round(ibov.value).toLocaleString("pt-BR")} pts, ${ibov.change > 0 ? "+" : ""}${ibov.change.toLocaleString("pt-BR")}%`;
+    }) },
+    { label: "Notícias", value: deskReady.then((d) => {
+      if (!d.news || !d.news.length) throw new Error("sem notícias");
+      return `${d.news.length} manchetes de ${Array.from(new Set(d.news.map((n) => n.source))).join(", ")}`;
+    }) },
   ];
 }
 
@@ -933,9 +941,11 @@ const drawLogos = () => {
   $("#titlebar").insertAdjacentHTML("afterbegin", pixel("sofa"));
 };
 drawLogos();
+// Trocar de tema mostra a entrada do tema novo: vira a passagem de um para o outro
 onThemeChange(() => {
   drawLogos();
   render();
+  bootNow();
 });
 // De onde a janela abre (retrô): o que foi clicado ou confirmado com OK na área de trabalho
 document.addEventListener("click", (e) => rememberPick(e.target.closest("a, button")), true);

@@ -1,4 +1,5 @@
-"""Área de trabalho do Sofá: onde você está, o tempo, a bolsa (B3), câmbio, o próximo foguete e as manchetes do Hacker News.
+"""Área de trabalho do Sofá: onde você está, o tempo, a bolsa (B3), câmbio, o próximo foguete e manchetes de tecnologia
+(em português: Tecnoblog, Canaltech, TecMundo e Meio Bit, pelo RSS de cada um).
 
 Tudo de fontes gratuitas e sem chave, buscado aqui no servidor e guardado por um tempo (algumas limitam pedidos,
 e a TV não precisa saber de nenhuma). Cada parte cai sozinha: sem resposta, fica a última que deu certo, e as
@@ -7,13 +8,17 @@ from __future__ import annotations
 
 import getpass
 import json
+import re
 import threading
 import time
+import xml.etree.ElementTree as ET
+from collections import Counter
 from concurrent.futures import ThreadPoolExecutor, wait
 from datetime import datetime, timedelta
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Callable
-from urllib.parse import urlencode, urlparse
+from urllib.parse import urlencode
 
 PLACE_URL = "http://ip-api.com/json/?fields=status,city,region,lat,lon,timezone&lang=pt-BR"
 WEATHER_URL = "https://api.open-meteo.com/v1/forecast?"
@@ -23,13 +28,19 @@ MARKETS_URL = "https://economia.awesomeapi.com.br/json/last/USD-BRL,EUR-BRL,BTC-
 B3_URL = "https://cotacao.b3.com.br/mds/api/v1/instrumentQuotation/"
 B3_SYMBOLS = {"IBOV": "Ibovespa", "PETR4": "Petrobras", "VALE3": "Vale", "ITUB4": "Itaú"}
 LAUNCHES_URL = "https://ll.thespacedevs.com/2.2.0/launch/upcoming/?limit=5&mode=list"
-NEWS_URL = "https://hacker-news.firebaseio.com/v0/"
+# Testados em 29/10/2026 (Jovem Nerd e Omelete não têm mais RSS; o do g1 chegava cortado; o do Olhar Digital traz anúncio)
+NEWS_FEEDS = {
+    "Tecnoblog": "https://tecnoblog.net/feed/", "Canaltech": "https://canaltech.com.br/rss/",
+    "TecMundo": "https://rss.tecmundo.com.br/feed", "Meio Bit": "https://meiobit.com/feed/",
+}
 
-TTL = {"place": 24 * 3600, "weather": 15 * 60, "markets": 5 * 60, "b3": 5 * 60, "launch": 3600, "news": 30 * 60}  # segundos
+TTL = {"place": 24 * 3600, "weather": 15 * 60, "markets": 5 * 60, "b3": 5 * 60, "launch": 3600, "headlines": 20 * 60}  # segundos
 RETRY = 120  # fonte que falhou: tenta de novo depois disso, não a cada pedido
 WAIT = 10    # quanto a página espera por todas as fontes juntas
 MARKET_NAMES = {"USD": "Dólar", "EUR": "Euro", "BTC": "Bitcoin", "ETH": "Ethereum"}
-NEWS_COUNT = 5
+NEWS_COUNT = 8
+NEWS_PER_SOURCE = 2  # a faixa não pode virar um site só
+ADS = re.compile(r"\b(cupo(m|ns)|desconto|promo(ção|ções)|oferta)", re.I)  # os sites misturam propaganda no feed
 
 
 def owner_name() -> str:
@@ -83,16 +94,36 @@ def _launch(raw: dict, now: float) -> dict | None:
     return None
 
 
-def _news_item(raw: dict) -> dict:
-    host = urlparse(raw.get("url") or "").hostname or "news.ycombinator.com"
-    return {"title": raw["title"], "score": raw.get("score", 0), "site": host.removeprefix("www.")}
+def _feed(source: str, raw: bytes) -> list[dict]:
+    """Manchetes de um RSS: título (sem quebras de linha) e quando saiu, em ms."""
+    items = []
+    for item in ET.fromstring(raw).iter("item"):
+        title, when = " ".join((item.findtext("title") or "").split()), item.findtext("pubDate")
+        try:
+            at = int(parsedate_to_datetime(when).timestamp() * 1000)
+        except (TypeError, ValueError):
+            continue
+        if title and not ADS.search(title):
+            items.append({"title": title, "source": source, "at": at})
+    return items
+
+
+def _headlines(feeds: list[list[dict]]) -> list[dict]:
+    """As mais recentes de todos os sites, no máximo NEWS_PER_SOURCE de cada um."""
+    picked, per_source = [], Counter()
+    for item in sorted((i for feed in feeds for i in feed), key=lambda i: -i["at"]):
+        if per_source[item["source"]] < NEWS_PER_SOURCE:
+            per_source[item["source"]] += 1
+            picked.append(item)
+    return picked[:NEWS_COUNT]
 
 
 class Desk:
-    """fetch_json(url) -> JSON decodificado (levanta OSError/ValueError quando a fonte falha)."""
+    """fetch_json(url) -> JSON decodificado; fetch_text(url) -> bytes (RSS). Levantam OSError/ValueError quando a fonte falha."""
 
-    def __init__(self, fetch_json: Callable[[str], object], cache_file: Path, clock=time.time):
-        self.fetch_json, self.cache_file, self.clock = fetch_json, Path(cache_file), clock
+    def __init__(self, fetch_json: Callable[[str], object], cache_file: Path, clock=time.time,
+                 fetch_text: Callable[[str], bytes] | None = None):
+        self.fetch_json, self.cache_file, self.clock, self.fetch_text = fetch_json, Path(cache_file), clock, fetch_text
         self.lock = threading.Lock()
         self.busy: dict[str, threading.Lock] = {k: threading.Lock() for k in TTL}
         self.failed_at: dict[str, float] = {}
@@ -158,11 +189,20 @@ class Desk:
         return _launch(raw, self.clock()) if raw else None
 
     def news(self):
+        """Manchetes de tecnologia em português; um site fora do ar não derruba os outros."""
+        def one(source):
+            try:
+                return _feed(source, self.fetch_text(NEWS_FEEDS[source]))
+            except (OSError, ValueError, ET.ParseError):
+                return []
+
         def load():
-            ids = self.fetch_json(NEWS_URL + "topstories.json")[:NEWS_COUNT]
-            with ThreadPoolExecutor(max_workers=NEWS_COUNT) as pool:
-                return [_news_item(item) for item in pool.map(lambda i: self.fetch_json(f"{NEWS_URL}item/{i}.json"), ids)]
-        return self._get("news", load)
+            with ThreadPoolExecutor(max_workers=len(NEWS_FEEDS)) as pool:
+                items = _headlines(list(pool.map(one, NEWS_FEEDS)))
+            if not items:
+                raise ValueError("nenhum site de notícias respondeu")
+            return items
+        return self._get("headlines", load)
 
     def snapshot(self) -> dict:
         """Tudo junto, buscando as fontes ao mesmo tempo; a que demorar mais que WAIT aparece da próxima vez.

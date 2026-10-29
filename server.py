@@ -347,7 +347,8 @@ def desk_snapshot(pid):
     """Tempo, câmbio, foguete e manchetes; com uma lista Xtream, a situação da conta (vencimento, conexões)."""
     with _panel_lock:
         if not _desk:
-            _desk.append(desk.Desk(lambda url: json.loads(fetch(url, timeout=8).read()), CACHE_DIR / "desk.json"))
+            _desk.append(desk.Desk(lambda url: json.loads(fetch(url, timeout=8).read()), CACHE_DIR / "desk.json",
+                                   fetch_text=lambda url: fetch(url, timeout=8).read()))
     playlist = next((p for p in load_playlists() if p["id"] == pid), None)
     panel = playlist and panel_for(playlist)
     return {**_desk[0].snapshot(), "name": desk.owner_name(), "account": panel.account_info() if panel else None}

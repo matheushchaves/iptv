@@ -25,10 +25,21 @@ LAUNCHES = {"results": [
     {"name": "GSLV Mk II | IRNSS-1L (NVS-03)", "net": "2026-10-30T18:21:00Z", "pad": "Second Launch Pad", "location": "Sriharikota, India",
      "status": {"abbrev": "Go"}},
 ]}
-NEWS_IDS = [11, 12, 13, 14, 15, 16]
+def rss(*items):
+    body = "".join(f"<item><title>{t}</title><pubDate>{d}</pubDate></item>" for t, d in items)
+    return f'<?xml version="1.0"?><rss><channel>{body}</channel></rss>'.encode()
+
+
+FEEDS = {
+    "tecnoblog": rss(("Android 17 chega ao Brasil", "Thu, 29 Oct 2026 20:17:00 -0300"), ("Pix ganha função", "Thu, 29 Oct 2026 18:00:00 -0300"),
+                     ("Notebook novo", "Thu, 29 Oct 2026 17:00:00 -0300")),
+    "canaltech": rss(("Patrick Stewart\n  morre aos 86", "Thu, 29 Oct 2026 20:23:00 -0300")),
+    "tecmundo": rss(("Google Cloud dobra receita", "Thu, 29 Oct 2026 20:00:00 -0300"), ("sem data", ""),
+                    ("Cupom Havaianas | Até 50% de desconto", "Thu, 29 Oct 2026 20:30:00 -0300")),
+    "meiobit": b"<rss><channel><item><title>quebrado",
+}
 B3 = {"BizSts": {"cd": "OK"}, "Msg": {"dtTm": "2026-10-29 16:31:04"},
       "Trad": [{"scty": {"SctyQtn": {"curPrc": 169691.16, "prcFlcn": -0.7712}, "symb": "IBOV", "desc": "IBOVESPA"}}]}
-NEWS_ITEM = {"title": "Show HN: Um player de IPTV no Chrome 79", "score": 321, "url": "https://example.com/post"}
 NOW = 1_793_294_400  # 29/10/2026 14:20 em Fortaleza: depois do Falcon 9, antes do GSLV
 
 
@@ -41,12 +52,18 @@ class Web:
     def __call__(self, url):
         self.calls.append(url)
         for key, answer in (("ip-api", PLACE), ("open-meteo", WEATHER), ("awesomeapi", MARKETS), ("thespacedevs", LAUNCHES),
-                            ("topstories", NEWS_IDS), ("item/", NEWS_ITEM), ("cotacao.b3", B3)):
+                            ("cotacao.b3", B3)):
             if key in url:
                 if key in self.down:
                     raise OSError("fora do ar")
                 return answer
         raise AssertionError(url)
+
+    def text(self, url):
+        self.calls.append(url)
+        if "rss" in self.down:
+            raise OSError("fora do ar")
+        return next(body for key, body in FEEDS.items() if key in url)
 
 
 class DeskTest(unittest.TestCase):
@@ -59,7 +76,7 @@ class DeskTest(unittest.TestCase):
         self.tmp.cleanup()
 
     def desk(self, web):
-        return desk.Desk(web, self.file, clock=lambda: self.now)
+        return desk.Desk(web, self.file, clock=lambda: self.now, fetch_text=web.text)
 
     def test_everything_comes_ready_for_the_screen(self):
         data = self.desk(Web()).snapshot()
@@ -75,8 +92,15 @@ class DeskTest(unittest.TestCase):
         self.assertEqual(data["b3"][0], {"symbol": "IBOV", "name": "Ibovespa", "value": 169691.16, "change": -0.77, "at": "16:31"})
         self.assertEqual(data["launch"]["rocket"], "GSLV Mk II")  # o que já subiu não conta
         self.assertEqual(data["launch"]["mission"], "IRNSS-1L (NVS-03)")
-        self.assertEqual(len(data["news"]), 5)
-        self.assertEqual(data["news"][0], {"title": NEWS_ITEM["title"], "score": 321, "site": "example.com"})
+        self.assertEqual([(n["source"], n["title"]) for n in data["news"]],
+                         [("Canaltech", "Patrick Stewart morre aos 86"), ("Tecnoblog", "Android 17 chega ao Brasil"),
+                          ("TecMundo", "Google Cloud dobra receita"), ("Tecnoblog", "Pix ganha função")])
+
+    def test_headlines_wait_for_another_time_when_every_site_is_down(self):
+        with mock.patch("builtins.print"):
+            data = self.desk(Web(down={"rss"})).snapshot()
+
+        self.assertIsNone(data["news"])
 
     def test_each_source_is_asked_again_only_after_its_time(self):
         web = Web()
