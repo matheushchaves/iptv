@@ -1,0 +1,11 @@
+# Listas salvas: links Xtream têm usuário e senha
+playlists.json
+uploads/
+# Dados locais: favoritos, notas e sinopses do painel, log
+prefs.json
+prefs.json.bad
+cache/
+*.log
+*.tmp
+__pycache__/
+.DS_Store

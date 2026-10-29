@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sofá</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,500..800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/app.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.15/hls.min.js" crossorigin="anonymous"></script>
+<script type="module" src="/static/js/main.js"></script>
+</head>
+<body data-view="live" data-stage="dock">
+<header class="topbar">
+  <a class="brand" href="#ao-vivo">Sofá</a>
+  <nav class="tabs" aria-label="Seções">
+    <a href="#ao-vivo" data-tab="live">Ao vivo <span class="count"></span></a>
+    <a href="#filmes" data-tab="movie">Filmes <span class="count"></span></a>
+    <a href="#series" data-tab="series">Séries <span class="count"></span></a>
+  </nav>
+  <div class="search">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
+    <input id="q" type="search" placeholder="Buscar canal" aria-label="Buscar" autocomplete="off" spellcheck="false">
+  </div>
+  <div class="source">
+    <select id="playlist" aria-label="Lista em uso"></select>
+    <button class="btn ghost" id="manage" type="button">Listas</button>
+  </div>
+</header>
+<div class="shell">
+  <nav class="rail" id="rail" aria-label="Categorias"></nav>
+  <main id="main">
+    <section id="browse" aria-live="polite"></section>
+    <section id="stage" aria-label="Player">
+      <div class="screen">
+        <video id="video" playsinline controlslist="nofullscreen"></video>
+        <div id="osd" aria-live="polite"></div>
+        <nav id="zapper" aria-label="Canais" hidden></nav>
+        <div id="idle" role="alertdialog" aria-live="assertive" aria-label="Ainda está assistindo?" hidden></div>
+        <div id="status" role="status"></div>
+      </div>
+      <div class="mini-bar">
+        <button type="button" id="miniOpen" class="mini-title" title="Abrir o player"></button>
+        <button type="button" id="miniClose" class="icon-btn" aria-label="Parar e fechar o player">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+    </section>
+    <section id="details" aria-live="polite"></section>
+  </main>
+</div>
+<dialog id="dlg" aria-labelledby="dlgTitle">
+  <div class="dlg-head">
+    <h3 id="dlgTitle">Listas salvas</h3>
+    <button class="icon-btn" type="button" id="close" aria-label="Fechar">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+  </div>
+  <div class="dlg-body">
+    <div class="saved" id="saved"></div>
+    <form class="add" id="addForm">
+      <label for="plName">Nome</label>
+      <input id="plName" maxlength="80" placeholder="Minha lista">
+      <div class="seg" role="radiogroup" aria-label="Origem da lista">
+        <label><input type="radio" name="src" value="url" checked><span>Link</span></label>
+        <label><input type="radio" name="src" value="file"><span>Arquivo</span></label>
+      </div>
+      <div id="srcUrl">
+        <label for="plUrl">Link da lista (.m3u / .m3u8)</label>
+        <input id="plUrl" type="url" placeholder="https://…/lista.m3u8">
+      </div>
+      <div id="srcFile" hidden>
+        <label class="drop" for="plFile">
+          <strong id="fileLabel">Escolher arquivo .m3u / .m3u8</strong>
+          <span>ou arraste aqui</span>
+        </label>
+        <input id="plFile" type="file" accept=".m3u,.m3u8,audio/x-mpegurl,application/vnd.apple.mpegurl" hidden>
+      </div>
+      <div id="formMsg" role="status"></div>
+      <button class="btn primary" type="submit" id="addBtn">Adicionar lista</button>
+    </form>
+  </div>
+</dialog>
+</body>
+</html>
