@@ -19,6 +19,7 @@ from pathlib import Path
 from urllib.parse import urlparse, parse_qs, quote, urljoin
 
 import catalog
+import desk
 import prefs
 import vodmatch
 import xtream
@@ -58,6 +59,7 @@ _epg_lock = threading.Lock()
 _playlist_lock = threading.Lock()
 _panels = {}  # playlist id -> xtream.Panel
 _panel_lock = threading.Lock()
+_desk = []  # a área de trabalho (criada no primeiro pedido, com o CACHE_DIR da hora)
 
 
 def fetch(url, timeout=20, headers=None):
@@ -341,6 +343,16 @@ def load_catalog(pid):
         return cat
 
 
+def desk_snapshot(pid):
+    """Tempo, câmbio, foguete e manchetes; com uma lista Xtream, a situação da conta (vencimento, conexões)."""
+    with _panel_lock:
+        if not _desk:
+            _desk.append(desk.Desk(lambda url: json.loads(fetch(url, timeout=8).read()), CACHE_DIR / "desk.json"))
+    playlist = next((p for p in load_playlists() if p["id"] == pid), None)
+    panel = playlist and panel_for(playlist)
+    return {**_desk[0].snapshot(), "name": desk.owner_name(), "account": panel.account_info() if panel else None}
+
+
 def movie_info(pid, vod_id):
     """Sinopse de um filme do painel: 202 quando o painel ainda não pode ser consultado (a página pede de novo)."""
     if not vod_id.isdigit():
@@ -435,6 +447,8 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(200, browse_section(query))
         elif path.path == "/api/prefs":
             self.send_json(200, PREFS.read())
+        elif path.path == "/api/desk":
+            self.send_json(200, desk_snapshot(arg(query, "playlist")))
         elif path.path == "/api/vodinfo":
             self.send_json(*movie_info(arg(query, "playlist"), arg(query, "id")))
         elif path.path == "/api/show":

@@ -383,6 +383,7 @@ class CatalogApiTest(unittest.TestCase):
             mock.patch.object(server, "CACHE_DIR", root / "cache"),
             mock.patch.dict(server._catalog_cache, clear=True),
             mock.patch.dict(server._panels, clear=True),
+            mock.patch.object(server, "_desk", []),
         ]
         for p in cls.patches:
             p.start()
@@ -431,6 +432,15 @@ class CatalogApiTest(unittest.TestCase):
             status, data = self.get_json("/api/vodinfo?playlist=x1&id=101")
 
         self.assertEqual((status, data), (202, {"pending": True}))
+
+    def test_desk_answers_even_with_every_source_down(self):
+        with mock.patch.object(server, "fetch", side_effect=OSError("sem rede")), mock.patch("builtins.print"):
+            status, data = self.get_json("/api/desk?playlist=t1")
+
+        self.assertEqual(status, 200)
+        self.assertEqual({k: data[k] for k in ("weather", "markets", "launch", "news", "account")},
+                         {"weather": None, "markets": None, "launch": None, "news": None, "account": None})
+        self.assertIn("name", data)
 
     def test_live_lists_numbered_channels(self):
         _, data = self.get_json("/api/live?playlist=t1")

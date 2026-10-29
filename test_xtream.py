@@ -15,6 +15,10 @@ INFO = {"info": {"plot": "Paul Atreides se une aos Fremen.", "genre": "Ficção 
                  "cast": "Timothée Chalamet, Zendaya", "director": "Denis Villeneuve"}}
 
 
+ACCOUNT = {"user_info": {"status": "Active", "exp_date": "1800000000", "active_cons": "1", "max_connections": "1",
+                         "username": "eu", "password": "segredo"}}
+
+
 class FakePanel:
     def __init__(self, refuse=False):
         self.calls, self.refuse = [], refuse
@@ -23,6 +27,8 @@ class FakePanel:
         self.calls.append(url)
         if self.refuse:
             raise urllib.error.HTTPError(url, 403, "Forbidden", {}, None)
+        if "action=" not in url:
+            return ACCOUNT
         action = url.split("action=")[1].split("&")[0]
         return {"get_vod_streams": VOD, "get_series": SERIES, "get_vod_info": INFO}[action]
 
@@ -91,6 +97,17 @@ class PanelTest(unittest.TestCase):
         self.assertEqual(len(fake.calls), xtream.CALLS_PER_MINUTE)
         self.clock.now += 61
         self.assertIsNotNone(panel.movie_info("99"))
+
+    def test_account_shows_expiry_and_connections_without_the_login(self):
+        fake = FakePanel()
+        panel = self.panel(fake)
+
+        info = panel.account_info()
+        self.clock.now += 60
+        panel.account_info()
+
+        self.assertEqual(info, {"status": "Active", "expires": 1800000000, "active": 1, "max": 1})
+        self.assertEqual(len(fake.calls), 1)  # guardado por uns minutos
 
     def test_refusal_pauses_all_calls_for_a_while(self):
         refusing = FakePanel(refuse=True)

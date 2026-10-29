@@ -19,6 +19,7 @@ from urllib.parse import parse_qs, urlencode, urlparse
 from catalog import fold
 
 BULK_TTL = 24 * 60 * 60
+ACCOUNT_TTL = 10 * 60
 CALLS_PER_MINUTE = 4
 BLOCKED_PAUSE = 10 * 60
 MAX_PLOT = 400
@@ -73,6 +74,7 @@ class Panel:
         self.lock = threading.Lock()
         self.calls: deque[float] = deque()
         self.blocked_until = 0.0
+        self.account = (0.0, None)  # (quando, situação da conta): só na memória, muda a toda hora
         self.data = self._load()
 
     def _load(self) -> dict:
@@ -120,6 +122,22 @@ class Panel:
             shows = {fold(s["name"]): _series_info(s) for s in series if s.get("name")}
             self._save({**self.data, "bulkAt": self.clock(), "ratings": ratings, "series": shows})
             return self.data
+
+    def account_info(self) -> dict | None:
+        """Situação da conta (ativa, vencimento, conexões em uso), sem usuário nem senha; guardada por uns minutos."""
+        with self.lock:
+            at, info = self.account
+            if info and self.clock() - at < ACCOUNT_TTL:
+                return info
+            raw = self._call()
+            user = raw.get("user_info") if isinstance(raw, dict) else None
+            if not isinstance(user, dict):
+                return info
+            num = lambda v: int(v) if str(v or "").isdigit() else None
+            info = {"status": user.get("status") or "", "expires": num(user.get("exp_date")),
+                    "active": num(user.get("active_cons")), "max": num(user.get("max_connections"))}
+            self.account = (self.clock(), info)
+            return info
 
     def movie_info(self, vod_id: str) -> dict | None:
         """Sinopse, gênero, duração e elenco de um filme; None se o painel ainda não pode ser consultado."""
