@@ -83,6 +83,7 @@ function onRoute() {
   home.toggleStart(false);
   setState({ ...parseHash(), theater: false });
   render();
+  reloadIfSafe();
   if (was !== state.view && (was === "home" || state.view === "home")) transition(was === "home");
 }
 
@@ -760,6 +761,7 @@ function rememberProgress({ entry, t, d }) {
 
 player.on("change", (p) => {
   if (!p) setState({ theater: false });
+  if (!p) setTimeout(reloadIfSafe, 0); // parou o vídeo: se tinha atualização esperando, é a hora
   if (p && p.kind === "live" && state.live[p.id]) lastChannel.set(state.pid, state.live[p.id].url, p.url);
   applyLayout();
   renderDetails();
@@ -850,6 +852,7 @@ $("#miniOpen").addEventListener("click", () => {
 $("#miniClose").addEventListener("click", () => player.stop());
 setInterval(() => {
   syncQuietly();
+  checkVersion();
   if (state.view === "home" && state.pid && Date.now() - deskAt > DESK_REFRESH_MS) loadDesk().catch(() => {});
   if (state.view === "live" && state.summary) renderLive({ keep: true });
   if ((player.nowPlaying() || {}).kind === "live") renderDetails();
@@ -885,6 +888,26 @@ function resumeLastChannel() {
   if (!last) return;
   playChannel(last.ch, last.url);
   focusChannel(playingIndex());
+}
+
+// ---------- atualização: a TV fica dias com o Sofá aberto ----------
+// Quando o código muda, a página se recarrega sozinha, mas só quando não atrapalha (nada tocando, no início, sem a
+// janela de listas aberta). Sem isso, a página velha mostra dado novo errado ("undefined pontos" nas manchetes).
+let loadedVersion = null;
+let updateReady = false;
+
+function reloadIfSafe() {
+  if (updateReady && !player.nowPlaying() && state.view === "home" && !$("#dlg").open) location.reload();
+}
+
+function checkVersion() {
+  api.version().then(({ version }) => {
+    if (!loadedVersion) loadedVersion = version;
+    else if (version !== loadedVersion) {
+      updateReady = true;
+      reloadIfSafe();
+    }
+  }).catch(() => {});
 }
 
 // ---------- entrada: o boot conta o que está carregando, com os números de verdade ----------
@@ -951,6 +974,7 @@ onThemeChange(() => {
 document.addEventListener("click", (e) => rememberPick(e.target.closest("a, button")), true);
 document.addEventListener("keydown", (e) => { if (e.key === "Enter") rememberPick(document.activeElement); }, true);
 home.startClock();
+checkVersion();
 if (!location.hash) history.replaceState(null, "", "#inicio");
 initPlaylists({ onSelect: (pid) => loadPlaylist(pid).then(() => { desk = null; return loadDesk(); }).catch(() => {}) });
 const sharedReady = loadShared().catch(() => player.flash("Não foi possível carregar os favoritos"));

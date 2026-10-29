@@ -1,6 +1,7 @@
 """Testes do servidor: proxy, leitura de M3U e guia, API do catálogo. Rodar: python3 -m unittest -v"""
 import http.client
 import io
+import os
 import json
 import tempfile
 import threading
@@ -441,6 +442,21 @@ class CatalogApiTest(unittest.TestCase):
         self.assertEqual({k: data[k] for k in ("weather", "markets", "launch", "news", "account")},
                          {"weather": None, "markets": None, "launch": None, "news": None, "account": None})
         self.assertIn("name", data)
+
+    def test_version_changes_when_the_page_code_changes(self):
+        _, before = self.get_json("/api/version")
+        main = server.STATIC_DIR / "js" / "main.js"
+        main.write_text("export const novo = 1;")
+        os.utime(main, ns=(main.stat().st_mtime_ns + 10**9,) * 2)
+
+        _, after = self.get_json("/api/version")
+
+        self.assertNotEqual(before["version"], after["version"])
+
+    def test_page_and_scripts_are_always_checked_again(self):
+        for path in ("/", "/static/js/main.js"):
+            with urllib.request.urlopen(self.base + path, timeout=5) as resp:
+                self.assertEqual(resp.headers["Cache-Control"], "no-cache", path)
 
     def test_live_lists_numbered_channels(self):
         _, data = self.get_json("/api/live?playlist=t1")

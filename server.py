@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Servidor IPTV local: playlist M3U + EPG XMLTV + proxy HLS. Só stdlib."""
+import hashlib
 import json
 import re
 import socket
@@ -51,6 +52,8 @@ MAX_UPLOAD = 300 * 1024 * 1024
 
 _epg_cache = {"at": 0, "data": None}
 STATIC_DIR = ROOT / "static"
+STARTED = str(time.time())  # reiniciar o servidor também muda a versão (o formato dos dados pode ter mudado)
+NO_CACHE_TYPES = ("text/html", "text/javascript", "text/css")
 STATIC_TYPES = {".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8"}
 
 _catalog_cache = {}  # playlist id -> {"at", "source", "data": catalog.Catalog}
@@ -366,6 +369,17 @@ def movie_info(pid, vod_id):
     return (200, info) if info is not None else (202, {"pending": True})
 
 
+def app_version():
+    """Muda quando a página muda (index.html e static/) ou o servidor reinicia. A TV fica dias com o Sofá aberto:
+    a página compara com a versão que carregou e se recarrega sozinha (página velha com dado novo mostra lixo)."""
+    digest = hashlib.sha1(STARTED.encode())
+    for f in sorted([ROOT / "index.html", *STATIC_DIR.rglob("*")]):
+        if f.is_file():
+            st = f.stat()
+            digest.update(f"{f}:{st.st_mtime_ns}:{st.st_size}".encode())
+    return digest.hexdigest()[:12]
+
+
 def arg(query, name):
     return query.get(name, [""])[0]
 
@@ -407,6 +421,8 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(code)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
+        if ctype.startswith(NO_CACHE_TYPES):
+            self.send_header("Cache-Control", "no-cache")  # código novo chega no próximo carregamento, sempre
         if cors:
             self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
@@ -448,6 +464,8 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(200, browse_section(query))
         elif path.path == "/api/prefs":
             self.send_json(200, PREFS.read())
+        elif path.path == "/api/version":
+            self.send_json(200, {"version": app_version()})
         elif path.path == "/api/desk":
             self.send_json(200, desk_snapshot(arg(query, "playlist")))
         elif path.path == "/api/vodinfo":

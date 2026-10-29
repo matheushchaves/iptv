@@ -204,7 +204,9 @@ export function renderTaskbar({ desk, view }) {
   const el = document.getElementById("taskbar");
   const news = (desk && desk.news) || [];
   const w = desk && desk.weather;
-  const headlines = news.map((n) => `<span>${esc(n.title)} <small>${esc(n.source)}, ${published(n.at)}</small></span>`).join("");
+  // Campo que faltar (dado guardado de outra versão) some em vez de virar "undefined" na tela
+  const headlines = news.filter((n) => n && n.title).map((n) => `<span>${esc(n.title)}
+    <small>${[esc(n.source || ""), n.at ? published(n.at) : ""].filter(Boolean).join(", ")}</small></span>`).join("");
   const section = SECTIONS[view];
   // Fora do início, a barra é do ponteiro: as setas do controle continuam só na lista
   const tab = view === "home" ? "" : ' tabindex="-1"';

@@ -30,5 +30,6 @@ export const api = {
   vodInfo: (playlist, id) => request(`/api/vodinfo?${qs({ playlist, id })}`),
   log: (msg) => postJson("/api/log", { msg }),
   prefs: () => request("/api/prefs"),
+  version: () => request("/api/version"),
   updatePrefs: (op) => postJson("/api/prefs", op),
 };
