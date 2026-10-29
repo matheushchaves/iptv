@@ -1,0 +1,212 @@
+/* Tema retrô, Sofá 98: o computador de casa do fim dos anos 90, como lembra quem tinha 8 anos. O início é a área de
+   trabalho (fundo verde-água, janelas cinza com relevo, barra de título azul-marinho); o resto do app é um programa
+   aberto nela: moldura de janela e barra de ferramentas cinza por fora, o conteúdo escuro por dentro (a "pele" de
+   media player da época), com a mesma fonte de pixel nos títulos e números. Na TV o foco precisa gritar: o que está
+   marcado fica azul-marinho, como a seleção do Windows. */
+:root {
+  --w-face: #c3c3c3;
+  --w-light: #ffffff;
+  --w-hi: #dfdfdf;
+  --w-shadow: #808080;
+  --w-dark: #0a0a0a;
+  --w-navy: #0a246a;
+  --w-navy-2: #3a6ea5;
+  --w-teal: #0c6f72;
+  --w-text: #111111;
+  --w-up: #0b7a35;
+  --w-down: #b3141f;
+  --font-pixel: "Pixelify Sans", "Atkinson Hyperlegible", system-ui, sans-serif;
+  --font-term: "VT323", ui-monospace, "Courier New", monospace;
+  --bevel-out: inset -1px -1px 0 var(--w-dark), inset 1px 1px 0 var(--w-hi), inset -2px -2px 0 var(--w-shadow), inset 2px 2px 0 var(--w-light);
+  --bevel-in: inset -1px -1px 0 var(--w-light), inset 1px 1px 0 var(--w-shadow), inset -2px -2px 0 var(--w-hi), inset 2px 2px 0 var(--w-dark);
+}
+
+/* ---------- a janela do programa (fora do início) ---------- */
+body:not([data-view="home"]) .titlebar {
+  display: flex; align-items: center; height: 30px; padding: 0 4px 0 8px;
+  background: linear-gradient(90deg, var(--w-navy), var(--w-navy-2)); color: #fff; font: 600 15px/1 var(--font-pixel); letter-spacing: 0.02em;
+}
+.titlebar .px { width: 20px; margin-right: 8px; }
+.titlebar-name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.titlebar .win-ctl { display: flex; }
+.titlebar .win-ctl button, .win-ctl i {
+  display: grid; place-items: center; width: 20px; height: 18px; margin-left: 2px; padding: 0; border: 0; cursor: pointer;
+  background: var(--w-face); color: var(--w-text); font: 700 12px/1 var(--font-ui); font-style: normal; box-shadow: var(--bevel-out);
+}
+.titlebar .win-ctl button:active { box-shadow: var(--bevel-in); }
+
+body[data-view="home"] .topbar { display: none; }
+.topbar { gap: 0; padding: 4px 8px; background: var(--w-face); color: var(--w-text); border-bottom: 0; box-shadow: inset 0 -1px 0 var(--w-shadow); }
+.topbar > * + * { margin-left: 16px; }
+.topbar .brand { display: none; }
+.topbar .brand + .tabs { margin-left: 0; }
+.topbar > .search { margin-left: auto; }
+.tabs a { padding: 8px 12px; border-radius: 0; color: var(--w-text); font: 600 16px/1 var(--font-pixel); }
+.tabs a:hover, .tabs a:focus { color: var(--w-text); box-shadow: var(--bevel-out); outline: none; }
+.tabs a[aria-current="page"] { color: var(--w-text); background: #d6d6d6; box-shadow: var(--bevel-in); }
+.tabs a[aria-current="page"]::after { display: none; }
+.tabs .count { color: #555; }
+.search input { background: #fff; color: var(--w-text); border: 0; border-radius: 0; box-shadow: var(--bevel-in); }
+.search input:focus { border: 0; box-shadow: var(--bevel-in), 0 0 0 2px var(--w-navy); }
+.search svg { stroke: #555; }
+.source select { background: #fff; color: var(--w-text); border: 0; border-radius: 0; box-shadow: var(--bevel-in); }
+.source > * + * { margin-left: 8px; }
+
+/* O conteúdo escuro dentro da moldura cinza da janela */
+body:not([data-view="home"]) .shell { border-left: 4px solid var(--w-face); border-right: 4px solid var(--w-face); }
+
+/* Botões com relevo, também dentro do conteúdo escuro */
+.btn { border: 0; border-radius: 0; background: var(--w-face); color: var(--w-text); box-shadow: var(--bevel-out); font-weight: 700; }
+.btn:hover, .btn:focus { border-color: transparent; background: var(--w-navy); color: #fff; outline: 1px dotted #fff; outline-offset: -5px; }
+.btn:active { box-shadow: var(--bevel-in); }
+.btn.primary { background: var(--lamp); color: var(--lamp-ink); box-shadow: 0 0 0 1px var(--w-dark), var(--bevel-out); }
+.btn.primary:hover, .btn.primary:focus { background: var(--w-navy); color: #fff; }
+.btn.ghost { background: var(--w-face); }
+.btn.danger:hover { color: #fff; }
+
+/* A mesma fonte de pixel da área de trabalho nos títulos e números */
+.list-head h1, .grid-head h1, .show-info h1, .vod-title, .now-head h2, .hint p:first-child, .zap-head b, .vod-sub,
+.ch-num, .now-num, .osd-num, .zap-num, .ep-num, .osd-text b, .osd-note, .seasons button, .group-head h2 {
+  font-family: var(--font-pixel); letter-spacing: 0.01em;
+}
+.osd-num, .now-num { font-weight: 700; }
+#osd, #zapper { border-radius: 0; box-shadow: 0 0 0 2px var(--w-face), 6px 8px 0 rgb(0 0 0 / 0.35); }
+.group-head h2 { border-radius: 0; background: var(--w-face); color: var(--w-text); border: 0; box-shadow: var(--bevel-out); }
+.group-head small { color: #444; }
+
+/* Listas: a janela do Windows 98 */
+dialog { padding: 3px; border: 0; border-radius: 0; background: var(--w-face); color: var(--w-text); box-shadow: var(--bevel-out), 8px 10px 0 rgb(0 0 0 / 0.3); }
+.dlg-head { padding: 4px 4px 4px 8px; border-bottom: 0; background: linear-gradient(90deg, var(--w-navy), var(--w-navy-2)); color: #fff; }
+.dlg-head h3 { font: 600 16px/1 var(--font-pixel); }
+.dlg-head .icon-btn { width: 22px; height: 20px; border-radius: 0; background: var(--w-face); color: var(--w-text); box-shadow: var(--bevel-out); }
+.saved-item { border-radius: 0; background: #fff; box-shadow: var(--bevel-in); }
+.saved-item small, form.add label, #formMsg.ok { color: #444; }
+form.add input:not([type="radio"]) { background: #fff; color: var(--w-text); border: 0; border-radius: 0; box-shadow: var(--bevel-in); }
+.seg { background: var(--w-face); border: 0; border-radius: 0; box-shadow: var(--bevel-in); }
+.seg label { color: var(--w-text); }
+.seg input:checked + span { background: #fff; color: var(--w-text); box-shadow: none; outline: 1px dotted #000; }
+.drop { border-color: var(--w-shadow); border-radius: 0; }
+.drop span { color: #444; }
+
+/* ---------- área de trabalho ---------- */
+.desk {
+  grid-template-columns: 104px minmax(0, 1fr); color: var(--w-text);
+  background:
+    radial-gradient(rgb(0 0 0 / 0.07) 1px, transparent 1.2px) 0 0 / 4px 4px,
+    radial-gradient(ellipse at 50% 40%, rgb(255 255 255 / 0.08), rgb(0 0 0 / 0.28) 90%),
+    var(--w-teal);
+}
+.desk-icons { display: grid; align-content: start; row-gap: 18px; padding: 18px 6px; }
+.desk-icon {
+  display: grid; justify-items: center; row-gap: 6px; padding: 6px 2px; text-decoration: none; color: #fff;
+  font: 400 14px/1.15 var(--font-pixel); text-align: center; text-shadow: 1px 1px 0 #000;
+}
+.desk-icon svg { width: 48px; height: auto; }
+.desk-icon span { padding: 1px 4px; }
+.desk-icon:focus { outline: none; }
+.desk-icon:hover span, .desk-icon:focus span { background: var(--w-navy); outline: 1px dotted #fff; }
+.desk-icon:hover svg, .desk-icon:focus svg { background: rgb(10 36 106 / 0.55); outline: 1px dotted #fff; }
+.desk-windows { padding: 16px 18px 16px 6px; }
+
+.win { padding: 3px; background: var(--w-face); box-shadow: var(--bevel-out), 6px 8px 0 rgb(0 0 0 / 0.18); }
+.win-title { padding: 3px 3px 3px 6px; background: linear-gradient(90deg, var(--w-navy), var(--w-navy-2)); color: #fff; }
+.win-title h2 { font: 600 15px/1.25 var(--font-pixel); letter-spacing: 0.02em; }
+.win-title h2 svg { width: 18px; height: auto; margin-right: 8px; }
+.win-ctl { display: flex; }
+.win-body { padding: 12px 14px 14px; font-size: 15px; line-height: 1.4; }
+.win-empty, .win-note { color: #444; font-size: 13px; }
+
+.btn98 { padding: 7px 16px; border: 0; background: var(--w-face); color: var(--w-text); font: 700 15px/1.2 var(--font-ui); box-shadow: var(--bevel-out); }
+.btn98.primary { box-shadow: 0 0 0 1px var(--w-dark), var(--bevel-out); }
+.btn98:active { box-shadow: var(--bevel-in); }
+.btn98:hover, .btn98:focus, .watch-row:hover, .watch-row:focus { background: var(--w-navy); color: #fff; outline: 1px dotted #fff; outline-offset: -5px; }
+
+.hello-greet { font: 600 30px/1.1 var(--font-pixel); letter-spacing: 0.01em; }
+.hello-clock span { font: 400 46px/0.9 var(--font-term); color: var(--w-navy); }
+.hello-clock small { font-size: 15px; color: #333; }
+.hello-lines { padding: 8px 10px; background: #fff; box-shadow: var(--bevel-in); font-size: 15px; }
+/* Dica do dia no amarelo das dicas do Windows antigo */
+.tip { padding: 8px 10px; background: #ffffe1; border: 1px solid #000; font-size: 14px; line-height: 1.35; }
+.tip b { font: 600 14px/1 var(--font-pixel); margin-right: 4px; }
+
+.wx-now b { font: 400 54px/0.85 var(--font-term); }
+.wx-now span { font: 600 16px/1.2 var(--font-pixel); }
+.wx-more { margin: 8px 0 10px; font-size: 13px; color: #333; }
+.wx-row { background: #fff; box-shadow: var(--bevel-in); }
+.wx-row li { font-size: 13px; }
+.wx-row span { color: #333; }
+.wx-row b { font: 400 20px/1 var(--font-term); }
+.wx-row small { color: #1d5fa8; }
+.wx-days small { color: #555; }
+
+.watch-row small { color: #444; font-size: 13px; }
+.watch-row:hover small, .watch-row:focus small { color: #dfe6ff; }
+.watch-row .rating { color: #8a5a00; }
+.watch-row:hover .rating, .watch-row:focus .rating { color: #ffd27a; }
+.watch-list li + li { border-top: 1px solid #a8a8a8; }
+
+.ibov { padding: 6px 10px; background: #000; box-shadow: var(--bevel-in); color: #c8c8c8; font: 400 20px/1 var(--font-term); }
+.ibov b { color: #fff; font: 400 26px/1 var(--font-term); }
+.ibov .up { color: #4dff7c; }
+.ibov .down { color: #ff6b6b; }
+.quotes { background: #fff; box-shadow: var(--bevel-in); font-size: 14px; }
+.quotes tr + tr th, .quotes tr + tr td { border-top: 1px dotted #b9b9b9; }
+.quotes .up { color: var(--w-up); }
+.quotes .down { color: var(--w-down); }
+
+.launch-mission { font: 600 18px/1.2 var(--font-pixel); }
+.launch-rocket { margin: 2px 0 8px; color: #333; }
+.launch-count { padding: 6px 10px; background: #000; color: #4dff7c; box-shadow: var(--bevel-in); font: 400 34px/1 var(--font-term); letter-spacing: 0.04em; }
+
+/* ---------- barra de tarefas (em todas as telas; some na tela cheia, que é da moldura do vídeo) ---------- */
+.taskbar { background: var(--w-face); color: var(--w-text); box-shadow: inset 0 1px 0 var(--w-hi), inset 0 2px 0 var(--w-light); }
+.taskbar .start {
+  height: 38px; padding: 0 12px 0 8px; border: 0; background: var(--w-face); color: var(--w-text);
+  font: 700 17px/1 var(--font-pixel); box-shadow: var(--bevel-out);
+}
+.taskbar .start svg { width: 28px; margin-right: 8px; }
+.taskbar .start[aria-expanded="true"], .taskbar .start:active { box-shadow: var(--bevel-in); }
+.taskbar .start:focus, .taskbar .start:hover { outline: 1px dotted #000; outline-offset: -6px; }
+.task-sep { width: 2px; height: 34px; margin: 0 8px; box-shadow: inset 1px 0 0 var(--w-shadow), inset -1px 0 0 var(--w-light); }
+.task-app {
+  height: 38px; min-width: 220px; padding: 0 12px; margin-right: 8px; color: var(--w-text);
+  font: 700 15px/1 var(--font-ui); background: #d8d8d8; box-shadow: var(--bevel-in);
+}
+.task-app svg { width: 22px; margin-right: 8px; }
+.task-app:hover, .task-app:focus { outline: 1px dotted #000; outline-offset: -6px; }
+.ticker { background: var(--w-face); box-shadow: var(--bevel-in); }
+.ticker:empty { box-shadow: none; }
+.ticker-run { font-size: 15px; }
+.ticker-run b { margin: 0 14px 0 28px; padding: 1px 6px; background: #ff6600; color: #fff; font: 600 13px/1.2 var(--font-pixel); }
+.ticker-run small { color: #555; }
+.tray { font-size: 15px; box-shadow: var(--bevel-in); }
+.tray b { font: 400 24px/1 var(--font-term); }
+[data-stage="mini"] #stage { bottom: 60px; }
+
+.start-menu { padding: 3px; background: var(--w-face); box-shadow: var(--bevel-out), 6px 6px 0 rgb(0 0 0 / 0.25); }
+.start-band {
+  margin: 0; width: 34px; padding: 10px 0; background: linear-gradient(0deg, var(--w-navy), var(--w-navy-2)); color: #fff;
+  writing-mode: vertical-rl; transform: rotate(180deg); font: 600 22px/34px var(--font-pixel); letter-spacing: 0.04em;
+}
+.start-band b { color: #ffd27a; }
+.start-menu ul { padding: 2px; }
+.start-menu a, .start-menu button { padding: 8px 12px 8px 6px; color: var(--w-text); font: 400 16px/1.2 var(--font-ui); }
+.start-menu a:hover, .start-menu a:focus, .start-menu button:hover, .start-menu button:focus { background: var(--w-navy); color: #fff; outline: none; }
+.start-menu .sep { height: 2px; margin: 4px 2px; box-shadow: inset 0 1px 0 var(--w-shadow), inset 0 -1px 0 var(--w-light); }
+
+/* ---------- a janela abrindo e fechando: o retângulo pontilhado do Windows 98 ---------- */
+.zoom-box { position: fixed; z-index: 95; pointer-events: none; transform-origin: 0 0; border: 2px solid var(--w-face); outline: 1px dotted var(--w-dark); outline-offset: -1px; }
+
+/* ---------- entrada: a BIOS e o logo ---------- */
+#boot { background: #000; color: #c8c8c8; }
+#boot .post { padding: 40px 56px; font: 400 26px/1.25 var(--font-term); }
+#boot .spin { color: #ffd500; }
+#boot .ok { color: #fff; }
+#boot .bad { color: #ff6b6b; }
+#boot .boot-skip { font: 400 22px/1 var(--font-term); color: #777; }
+.splash .px { width: 176px; height: auto; }
+.splash-name { margin: 22px 0 0; font: 700 84px/0.9 var(--font-pixel); color: #fff; letter-spacing: 0.01em; }
+.splash-name sup { font-size: 0.42em; color: var(--lamp); margin-left: 6px; vertical-align: 0.9em; }
+.splash-tag { margin: 10px 0 26px; font: 400 26px/1 var(--font-term); color: #9a9a9a; letter-spacing: 0.08em; }
+.splash-bar { width: 320px; height: 24px; padding: 3px; background: #000; box-shadow: inset 0 0 0 2px #6d6d6d; }
+.splash-bar i { background: repeating-linear-gradient(90deg, var(--w-navy-2) 0 16px, transparent 16px 20px); animation-timing-function: steps(16); }

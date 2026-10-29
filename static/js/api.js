@@ -24,6 +24,8 @@ export const api = {
   browse: (playlist, kind, { group = "", q = "", offset = 0, limit = 60 } = {}) =>
     request(`/api/browse?${qs({ playlist, kind, group, q, offset, limit })}`),
   show: (playlist, id) => request(`/api/show?${qs({ playlist, id })}`),
+  // Área de trabalho: tempo, câmbio, foguete, manchetes e a situação da conta da lista
+  desk: (playlist) => request(`/api/desk?${qs({ playlist })}`),
   // Sinopse de um filme do painel; { pending: true } enquanto o painel não pode ser consultado
   vodInfo: (playlist, id) => request(`/api/vodinfo?${qs({ playlist, id })}`),
   log: (msg) => postJson("/api/log", { msg }),

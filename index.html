@@ -6,15 +6,38 @@
 <title>Sofá</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,500..800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Pixelify+Sans:wght@400..700&family=VT323&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/app.css">
+<link rel="stylesheet" href="/static/home.css">
+<link rel="stylesheet" href="/static/theme-modern.css" id="themeModern" media="not all">
+<link rel="stylesheet" href="/static/theme-retro.css" id="themeRetro" media="not all">
+<script>
+  // Liga o tema deste aparelho antes de desenhar (o outro não chega a piscar); o retrô é o padrão
+  (function () {
+    var t = "retro";
+    try { t = localStorage.getItem("iptv.theme") === "modern" ? "modern" : "retro"; } catch (e) {}
+    document.documentElement.setAttribute("data-theme", t);
+    document.getElementById(t === "modern" ? "themeModern" : "themeRetro").media = "all";
+  })();
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.15/hls.min.js" crossorigin="anonymous"></script>
 <script type="module" src="/static/js/main.js"></script>
 </head>
-<body data-view="live" data-stage="dock">
+<body data-view="home" data-stage="off">
+<div id="boot" hidden></div>
+<!-- Retrô: o app é uma janela da área de trabalho. Os botões são só do ponteiro: as setas do controle não param neles -->
+<div class="titlebar" id="titlebar">
+  <span class="titlebar-name" id="winTitle">Sofá</span>
+  <span class="win-ctl">
+    <button type="button" tabindex="-1" data-action="close" aria-label="Minimizar e voltar à área de trabalho">_</button>
+    <button type="button" tabindex="-1" data-action="fullscreen" aria-label="Tela cheia">□</button>
+    <button type="button" tabindex="-1" data-action="close" aria-label="Fechar e voltar à área de trabalho">×</button>
+  </span>
+</div>
 <header class="topbar">
-  <a class="brand" href="#ao-vivo">Sofá</a>
+  <a class="brand" href="#inicio">Sofá</a>
   <nav class="tabs" aria-label="Seções">
+    <a href="#inicio" data-tab="home">Início <span class="count"></span></a>
     <a href="#ao-vivo" data-tab="live">Ao vivo <span class="count"></span></a>
     <a href="#filmes" data-tab="movie">Filmes <span class="count"></span></a>
     <a href="#series" data-tab="series">Séries <span class="count"></span></a>
@@ -26,6 +49,7 @@
   <div class="source">
     <select id="playlist" aria-label="Lista em uso"></select>
     <button class="btn ghost" id="manage" type="button">Listas</button>
+    <button class="btn ghost theme-btn" type="button" data-action="theme">Tema</button>
   </div>
 </header>
 <div class="shell">
@@ -50,6 +74,7 @@
     <section id="details" aria-live="polite"></section>
   </main>
 </div>
+<footer class="taskbar" id="taskbar"></footer>
 <dialog id="dlg" aria-labelledby="dlgTitle">
   <div class="dlg-head">
     <h3 id="dlgTitle">Listas salvas</h3>

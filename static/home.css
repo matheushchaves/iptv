@@ -1,0 +1,92 @@
+/* O início e a entrada: só a estrutura, igual nos dois temas (posições, grades, animações). A cara de cada tema
+   fica em theme-retro.css (Sofá 98) e theme-modern.css (a sala com a luz apagada). */
+
+.px { display: block; image-rendering: pixelated; flex: none; }
+.ln { display: block; flex: none; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ---------- o início: sem as categorias ---------- */
+body[data-view="home"] .rail { display: none; }
+body[data-view="home"] .shell { grid-template-columns: minmax(0, 1fr); }
+body[data-view="home"] #main { overflow: hidden; }
+body[data-view="home"] #browse { height: 100%; }
+.brand { display: inline-flex; align-items: center; }
+.brand svg { width: 30px; height: auto; margin-right: 10px; }
+
+.desk { position: relative; height: 100%; display: grid; grid-template-columns: minmax(0, 1fr); }
+.desk-icons { display: none; }
+.desk-windows {
+  min-height: 0; overflow: hidden;
+  display: grid; grid-template-columns: 1.3fr 1fr 1fr; grid-auto-rows: min-content; gap: 16px; align-content: start;
+}
+.win-hello { grid-column: 1 / 3; }
+.win { display: flex; flex-direction: column; min-width: 0; }
+.win-title { display: flex; align-items: center; justify-content: space-between; }
+.win-title h2 { display: flex; align-items: center; min-width: 0; margin: 0; }
+.win-title h2 span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.win-body { flex: 1; }
+.win-empty, .win-note { margin: 0; }
+.win-note { margin-top: 8px; }
+.win-actions { display: flex; flex-wrap: wrap; margin-top: 14px; }
+.win-actions > * { margin: 0 10px 6px 0; }
+.btn98 { display: inline-block; cursor: pointer; text-decoration: none; }
+.hello-greet { margin: 0; }
+.hello-clock { display: flex; align-items: baseline; margin: 6px 0 10px; }
+.hello-clock small { margin-left: 14px; }
+.hello-lines { margin: 0; list-style: none; }
+.hello-lines li + li { margin-top: 3px; }
+.tip { margin: 12px 0 0; }
+.wx-now { display: flex; align-items: center; }
+.wx-now svg { width: 64px; height: auto; margin-right: 14px; }
+.wx-now p { display: grid; margin: 0; }
+.wx-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0; padding: 6px 4px; list-style: none; }
+.wx-days { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 8px; }
+.wx-row li { display: grid; justify-items: center; row-gap: 2px; }
+.wx-row svg { width: 26px; height: auto; }
+.wx-row span { text-transform: capitalize; }
+.wx-row small { min-height: 1.2em; }
+.watch-list { margin: 0; padding: 0; list-style: none; }
+.watch-row { display: grid; width: 100%; padding: 7px 8px; border: 0; background: none; color: inherit; text-align: left; cursor: pointer; font: inherit; }
+.watch-title { display: flex; align-items: baseline; min-width: 0; font-weight: 700; }
+.watch-row .rating { margin-left: 8px; }
+.ibov { display: flex; align-items: baseline; margin: 0 0 8px; }
+.ibov b { margin-left: 10px; }
+.ibov em { margin-left: auto; font-style: normal; }
+.quotes { width: 100%; border-collapse: collapse; }
+.quotes th, .quotes td { padding: 5px 8px; text-align: left; font-weight: 400; }
+.quotes td { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.quotes th small { opacity: 0.7; font-size: 0.8em; }
+.launch-mission, .launch-rocket, .launch-count { margin: 0; }
+
+/* ---------- barra de tarefas ---------- */
+.taskbar { position: relative; z-index: 6; }
+.task-main { display: flex; align-items: center; padding: 4px; }
+.taskbar .start, .task-app { display: flex; align-items: center; flex: none; cursor: pointer; text-decoration: none; }
+.taskbar .start svg, .task-app svg { height: auto; }
+.ticker { flex: 1; min-width: 0; height: 38px; overflow: hidden; white-space: nowrap; display: flex; align-items: center; }
+.ticker-run { display: inline-block; padding-left: 100%; animation: ticker linear infinite; }
+.ticker-run span { margin-right: 36px; }
+.ticker-run small { margin-left: 6px; }
+@keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-100%); } }
+.tray { display: flex; align-items: center; flex: none; height: 38px; margin-left: 8px; padding: 0 12px; }
+.tray svg { width: 20px; height: auto; margin-right: 6px; }
+.tray b { margin-left: 14px; }
+.start-menu { position: absolute; left: 4px; bottom: 100%; z-index: 7; display: flex; min-width: 270px; }
+.start-menu[hidden] { display: none; }
+.start-menu ul { flex: 1; margin: 0; list-style: none; }
+.start-menu a, .start-menu button {
+  display: flex; align-items: center; width: 100%; border: 0; background: none; text-decoration: none; text-align: left; cursor: pointer;
+}
+.start-menu svg, .start-menu i { width: 26px; height: auto; margin-right: 12px; flex: none; }
+
+/* ---------- entrada ---------- */
+#boot { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 100; transition: opacity 350ms; }
+#boot.out { opacity: 0; }
+#boot .post { margin: 0; white-space: pre-wrap; }
+#boot .boot-skip { position: absolute; right: 32px; bottom: 24px; margin: 0; }
+.splash { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: grid; justify-items: center; text-align: center; }
+.splash-bar i { display: block; height: 100%; transform-origin: left; transform: scaleX(0); animation: boot-bar linear forwards; }
+@keyframes boot-bar { to { transform: scaleX(1); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .ticker-run { animation: none; padding-left: 8px; }
+}

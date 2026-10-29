@@ -10,12 +10,18 @@ import * as zapper from "./zapper.js";
 import { renderGrid, gridItem, saveButtonHtml } from "./grid.js";
 import { showHtml, episodeList, locate, saveShowHtml } from "./show.js";
 import { initPlaylists, refreshPlaylists } from "./playlists.js";
+import * as home from "./home.js";
+import { runBoot, shouldBoot } from "./boot.js";
+import { icon, pixel, weatherLook } from "./pixel.js";
+import { isRetro, onThemeChange, otherThemeLabel, toggleTheme } from "./theme.js";
+import { toggleSound } from "./sound.js";
 import "./idle.js";
 
 const browseEl = $("#browse"), detailsEl = $("#details"), railEl = $("#rail"), searchEl = $("#q"), mainEl = $("#main");
-const VIEW_BY_SLUG = { "ao-vivo": "live", filmes: "movie", series: "series" };
-const SLUG_BY_VIEW = { live: "ao-vivo", movie: "filmes", series: "series" };
-const PLACEHOLDER = { live: "Buscar canal", movie: "Buscar filme", series: "Buscar série", show: "Buscar série" };
+const VIEW_BY_SLUG = { inicio: "home", "ao-vivo": "live", filmes: "movie", series: "series" };
+const SLUG_BY_VIEW = { home: "inicio", live: "ao-vivo", movie: "filmes", series: "series" };
+const PLACEHOLDER = { home: "Buscar canal", live: "Buscar canal", movie: "Buscar filme", series: "Buscar série", show: "Buscar série" };
+const DESK_REFRESH_MS = 5 * 60_000;
 const ALL_LABEL = { live: "Todos os canais", movie: "Todos os filmes", series: "Todas as séries" };
 const TUNE_MS = 1300;
 // CH± em sequência: só o canal em que você parar é carregado (cada carga cria um player de vídeo novo na TV)
@@ -43,6 +49,8 @@ let tuneBuffer = "";
 let tuneTimer = null;
 let pendingZap = null;
 let zapTimer = null;
+let desk = null; // tempo, câmbio, foguete e manchetes da área de trabalho (o servidor guarda; aqui, a última resposta)
+let deskAt = 0;
 
 // ---------- rotas: a URL guarda seção, categoria e busca ----------
 function parseHash() {
@@ -50,7 +58,7 @@ function parseHash() {
   const [head, id] = path.split("/");
   if (head === "serie" && id) return { view: "show", showId: decodeURIComponent(id), group: "", q: "" };
   const params = new URLSearchParams(query);
-  return { view: VIEW_BY_SLUG[head] || "live", showId: null, group: params.get("g") || "", q: params.get("q") || "" };
+  return { view: VIEW_BY_SLUG[head] || "home", showId: null, group: params.get("g") || "", q: params.get("q") || "" };
 }
 
 function hashFor({ view, group = "", q = "", showId }) {
@@ -71,8 +79,56 @@ function go(route, { replace = false } = {}) {
 }
 
 function onRoute() {
+  const was = state.view;
+  home.toggleStart(false);
   setState({ ...parseHash(), theater: false });
   render();
+  if (was !== state.view && (was === "home" || state.view === "home")) transition(was === "home");
+}
+
+// ---------- troca entre o início e o resto ----------
+// Retrô: o retângulo pontilhado do Windows 98 abrindo a janela a partir do que foi escolhido (e fechando de volta).
+// Moderno: a tela nova aparece esmaecendo. Curto e por cima de tudo, sem segurar nenhuma tecla.
+const ZOOM_MS = 240;
+let lastPick = null; // de onde a janela abre: o ícone ou botão escolhido por último
+
+function transition(opening) {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  if (!isRetro()) {
+    mainEl.classList.remove("enter");
+    void mainEl.offsetWidth; // recomeça a animação
+    mainEl.classList.add("enter");
+    return;
+  }
+  const bar = $("#taskbar").getBoundingClientRect();
+  const full = { left: 0, top: 0, width: window.innerWidth, height: bar.top || window.innerHeight };
+  const small = lastPick || { left: full.width / 2 - 60, top: full.height / 2 - 40, width: 120, height: 80 };
+  const task = $("#taskbar .task-app, #taskbar .start");
+  const back = task ? task.getBoundingClientRect() : small;
+  zoom(opening ? small : full, opening ? full : back);
+  lastPick = null;
+}
+
+function zoom(from, to) {
+  const box = document.createElement("div");
+  box.className = "zoom-box";
+  Object.assign(box.style, { left: `${to.left}px`, top: `${to.top}px`, width: `${to.width}px`, height: `${to.height}px` });
+  document.body.appendChild(box);
+  const start = `translate(${from.left - to.left}px, ${from.top - to.top}px) scale(${from.width / to.width}, ${from.height / to.height})`;
+  box.animate([{ transform: start }, { transform: "none" }], { duration: ZOOM_MS, easing: "steps(7, end)" }).onfinish = () => box.remove();
+}
+
+const rememberPick = (el) => {
+  if (state.view === "home" && el && el.getBoundingClientRect) lastPick = el.getBoundingClientRect();
+};
+
+// ---------- moldura: título da janela, botão de tema, barra de tarefas ----------
+const VIEW_TITLE = { home: "Área de trabalho", live: "Ao vivo", movie: "Filmes", series: "Séries", show: "Séries" };
+
+function renderChrome() {
+  $("#winTitle").textContent = `Sofá — ${VIEW_TITLE[state.view]}`;
+  document.querySelectorAll(".theme-btn").forEach((b) => { b.textContent = otherThemeLabel(); });
+  home.renderTaskbar({ desk, view: state.view });
 }
 
 // ---------- layout: onde o player fica ----------
@@ -90,7 +146,9 @@ function applyLayout() {
 
 function render() {
   applyLayout();
+  renderChrome();
   renderTabs();
+  if (state.view === "home") return renderHome();
   renderRail();
   syncSearch();
   if (!state.summary) return;
@@ -112,8 +170,9 @@ function render() {
 function renderTabs() {
   const s = state.summary;
   document.querySelectorAll("[data-tab]").forEach((a) => {
-    const count = (s && s[a.dataset.tab].count) || 0;
-    a.hidden = !!s && a.dataset.tab !== "live" && !count;
+    const info = s && s[a.dataset.tab];
+    const count = (info && info.count) || 0;
+    a.hidden = !!s && a.dataset.tab !== "live" && a.dataset.tab !== "home" && !count;
     a.setAttribute("aria-current", a.dataset.tab === section() ? "page" : "false");
     a.querySelector(".count").textContent = count ? count.toLocaleString("pt-BR") : "";
   });
@@ -158,6 +217,51 @@ function renderRail() {
 function syncSearch() {
   searchEl.placeholder = PLACEHOLDER[state.view];
   if (document.activeElement !== searchEl) searchEl.value = state.q;
+}
+
+// ---------- início: a área de trabalho ----------
+// O que ficou pela metade nos filmes e séries, do mais recente
+const recentAll = () => [...recent.list(state.pid, "movie"), ...recent.list(state.pid, "series")].sort((a, b) => b.at - a.at);
+
+function renderHome() {
+  const last = remembered(lastChannel.get(state.pid));
+  home.render(browseEl, { name: (desk || {}).name || "", desk, channels: state.live, recent: recentAll(), last: last && last.ch });
+  home.focusFirst();
+}
+
+function loadDesk() {
+  deskAt = Date.now();
+  const pid = state.pid;
+  return api.desk(pid).then((data) => {
+    if (state.pid !== pid) return data;
+    desk = data;
+    home.renderTaskbar({ desk, view: state.view });
+    if (state.view === "home") renderHome();
+    return data;
+  });
+}
+
+/** Sai do início para o ao vivo tocando um canal (a área de trabalho vira a lista, com ele marcado). */
+function watchOnLive(ch, url) {
+  history.pushState(null, "", hashFor({ view: "live" }));
+  onRoute();
+  playChannel(ch, url);
+  focusChannel(playingIndex());
+}
+
+function continueLast() {
+  const last = remembered(lastChannel.get(state.pid));
+  if (last) watchOnLive(last.ch, last.url);
+  else go({ view: "live" });
+}
+
+function resumeRecent() {
+  const item = recentAll()[0];
+  if (!item) return;
+  history.pushState(null, "", hashFor({ view: item.kind === "series" ? "series" : "movie" }));
+  onRoute();
+  if (item.showId) openEpisode(item.showId, item.url);
+  else playMovie(item);
 }
 
 // ---------- ao vivo ----------
@@ -534,7 +638,8 @@ function pickVersion(url) {
 
 // ---------- eventos ----------
 function onClick(e) {
-  const t = e.target.closest("[data-ch],[data-zap],[data-fav],[data-save],[data-version],[data-prog],[data-i],[data-ep],[data-season],[data-action]");
+  if (home.startOpen() && !e.target.closest("#startMenu, [data-action='start']")) home.toggleStart(false);
+  const t = e.target.closest("[data-ch],[data-zap],[data-fav],[data-save],[data-version],[data-prog],[data-watch],[data-resume],[data-i],[data-ep],[data-season],[data-action]");
   if (!t) return;
   const d = t.dataset;
   if (d.zap) pickFromZapper(zapper.pick(Number(d.zap)));
@@ -549,6 +654,8 @@ function onClick(e) {
   } else if (d.save) onSaveCard(t);
   else if (d.version) pickVersion(d.version);
   else if (d.prog) playFromGuide(d.prog);
+  else if (d.watch) watchOnLive(state.live[Number(d.watch)]);
+  else if (d.resume) resumeRecent();
   else if (d.fav) {
     favorites.toggleAny(state.live[Number(d.fav)].urls);
     renderRail();
@@ -572,7 +679,14 @@ function onClick(e) {
   } else if (d.action === "save-movie") {
     toggleSaved("movie", player.nowPlaying());
     renderDetails();
-  } else if (d.action === "copy") copyLink(t);
+  } else if (d.action === "continue") continueLast();
+  else if (d.action === "start") home.toggleStart();
+  else if (d.action === "lists") { home.toggleStart(false); $("#manage").click(); }
+  else if (d.action === "reboot") { home.toggleStart(false); bootNow(); }
+  else if (d.action === "theme") { home.toggleStart(false); toggleTheme(); }
+  else if (d.action === "sound") { toggleSound(); home.renderTaskbar({ desk, view: state.view }); home.toggleStart(true); }
+  else if (d.action === "close") go({ view: "home" });
+  else if (d.action === "copy") copyLink(t);
   else if (d.action === "fullscreen") player.toggleFullscreen();
 }
 
@@ -585,11 +699,18 @@ function onKey(e) {
   // F abre e fecha a tela cheia, como no YouTube
   if (e.key === "f" || e.key === "F") { player.toggleFullscreen(); return; }
   if (player.isFullscreen() && fullscreenKey(e)) { e.preventDefault(); return; }
+  if (state.view === "home" || home.startOpen()) { if (homeKey(e)) e.preventDefault(); return; }
   if (state.view !== "live") return;
   const step = channelStep(e);
   if (step) { e.preventDefault(); zap(step); }
   else if (navigate(e.key)) e.preventDefault();
   else if (/^[0-9]$/.test(e.key)) tune(e.key);
+}
+
+// Início: setas andam pelos botões pela posição na tela; Voltar ou Esc fecham o menu Iniciar
+function homeKey(e) {
+  if (home.startOpen() && (e.key === "Escape" || e.keyCode === BACK_KEY)) { home.toggleStart(false); return true; }
+  return home.moveFocus(e.key);
 }
 
 // Tela cheia: OK abre a lista rápida; com ela aberta, ↑↓ andam, OK troca de canal e ← fecha.
@@ -729,6 +850,7 @@ $("#miniOpen").addEventListener("click", () => {
 $("#miniClose").addEventListener("click", () => player.stop());
 setInterval(() => {
   syncQuietly();
+  if (state.view === "home" && state.pid && Date.now() - deskAt > DESK_REFRESH_MS) loadDesk().catch(() => {});
   if (state.view === "live" && state.summary) renderLive({ keep: true });
   if ((player.nowPlaying() || {}).kind === "live") renderDetails();
 }, GUIDE_REFRESH_MS);
@@ -765,8 +887,68 @@ function resumeLastChannel() {
   focusChannel(playingIndex());
 }
 
-initPlaylists({ onSelect: loadPlaylist });
+// ---------- entrada: o boot conta o que está carregando, com os números de verdade ----------
+const deviceName = () => {
+  const chrome = (navigator.userAgent.match(/Chrome\/(\d+)/) || [])[1];
+  const where = ON_TV ? "TV LG (webOS)" : /Mac OS X/.test(navigator.userAgent) ? "Mac" : "Navegador";
+  return chrome ? `${where}, Chrome ${chrome}` : where;
+};
+
+function bootSteps(listReady, deskReady) {
+  const fmt = (n) => n.toLocaleString("pt-BR");
+  const now = Date.now();
+  return [
+    { label: "Aparelho", value: deviceName() },
+    { label: "Servidor do Sofá", value: `${location.host} OK` },
+    { label: "Lista", value: listReady.then(() => {
+      const s = state.summary;
+      if (!s) throw new Error("sem lista");
+      return `${fmt(s.live.count)} canais, ${fmt(s.movie.count)} filmes, ${fmt(s.series.count)} séries`;
+    }) },
+    { label: "Guia de programação", value: listReady.then(() => {
+      const movies = state.live.filter((c) => live.movieOnAir(c, now)).length;
+      return `${live.onAirCount(state.live, now)} canais no ar${movies ? `, ${movies} filmes passando` : ""}`;
+    }) },
+    { label: "Conta da lista", value: deskReady.then((d) => (d.account && d.account.expires
+      ? `ativa até ${new Date(d.account.expires * 1000).toLocaleDateString("pt-BR")}` : "sem painel Xtream")) },
+    { label: "Clima", value: deskReady.then((d) => {
+      if (!d.weather) throw new Error("sem tempo");
+      return `${d.place.city}, ${d.weather.now.temp}°, ${weatherLook(d.weather.now.code, d.weather.now.day).text}`;
+    }) },
+    { label: "Hacker News", value: deskReady.then((d) => (d.news && d.news.length ? `${d.news.length} manchetes` : "sem resposta")) },
+  ];
+}
+
+function bootNow() {
+  return runBoot(bootSteps(Promise.resolve(), desk ? Promise.resolve(desk) : loadDesk()), { retro: isRetro() }).then(() => {
+    if (state.view === "home") renderHome();
+  });
+}
+
+// O logo da barra de cima segue o tema; a barra de título (só do retrô) leva o sofá em pixel
+const drawLogos = () => {
+  const brand = $(".brand");
+  brand.innerHTML = `${icon("sofa")}Sofá`;
+  $("#titlebar").querySelectorAll(".px").forEach((el) => el.remove());
+  $("#titlebar").insertAdjacentHTML("afterbegin", pixel("sofa"));
+};
+drawLogos();
+onThemeChange(() => {
+  drawLogos();
+  render();
+});
+// De onde a janela abre (retrô): o que foi clicado ou confirmado com OK na área de trabalho
+document.addEventListener("click", (e) => rememberPick(e.target.closest("a, button")), true);
+document.addEventListener("keydown", (e) => { if (e.key === "Enter") rememberPick(document.activeElement); }, true);
+home.startClock();
+if (!location.hash) history.replaceState(null, "", "#inicio");
+initPlaylists({ onSelect: (pid) => loadPlaylist(pid).then(() => { desk = null; return loadDesk(); }).catch(() => {}) });
 const sharedReady = loadShared().catch(() => player.flash("Não foi possível carregar os favoritos"));
-Promise.all([refreshPlaylists(lastPlaylist.get()), sharedReady])
-  .then(([pid]) => loadPlaylist(pid))
-  .catch((e) => { browseEl.innerHTML = `<p class="note">Não foi possível abrir as listas: ${esc(e.message)}</p>`; });
+const pidReady = Promise.all([refreshPlaylists(lastPlaylist.get()), sharedReady]).then(([pid]) => pid);
+const listReady = pidReady.then((pid) => loadPlaylist(pid));
+const deskReady = pidReady.then(() => loadDesk());
+if (parseHash().view === "home" && shouldBoot()) {
+  runBoot(bootSteps(listReady, deskReady), { retro: isRetro() }).then(() => { if (state.view === "home") renderHome(); });
+}
+listReady.catch((e) => { browseEl.innerHTML = `<p class="note">Não foi possível abrir as listas: ${esc(e.message)}</p>`; });
+deskReady.catch(() => {});

@@ -1,0 +1,92 @@
+/* Tema moderno: a sala com a luz apagada (fundo ameixa, âmbar de abajur) também no início e na entrada. O início é
+   uma página do app, com a mesma barra de cima: os blocos da área de trabalho viram cartões, e as manchetes ficam
+   numa faixa discreta embaixo (a barra de tarefas só aparece no início; não tem menu Iniciar). */
+
+body:not([data-view="home"]) .taskbar { display: none; }
+.taskbar .start, .task-sep, .task-app, .start-menu { display: none !important; }
+[data-view="home"][data-stage="mini"] #stage { bottom: 64px; }
+
+/* ---------- início ---------- */
+/* A barra de cima fica (é uma página do app): o início rola quando não cabe, e o foco do controle leva junto */
+body[data-view="home"] #main { overflow-y: auto; }
+.desk-windows { overflow: visible; padding: 20px 24px 28px; gap: 16px; }
+.win { padding: 14px 18px 16px; background: var(--sofa); border: 1px solid var(--seam); border-radius: var(--r-l); }
+.win-title { margin-bottom: 10px; }
+.win-title h2 { font: 700 var(--step--1)/1.2 var(--font-ui); color: var(--muted); letter-spacing: 0.02em; }
+.win-title h2 svg { width: 18px; height: 18px; margin-right: 8px; color: var(--lamp); }
+.win-ctl { display: none; }
+.win-body { font-size: var(--step-0); line-height: 1.45; }
+.win-empty, .win-note { color: var(--muted); font-size: var(--step--1); }
+
+.btn98 {
+  padding: 9px 16px; border: 1px solid var(--seam); border-radius: var(--r-m); background: var(--cushion); color: var(--text);
+  font: 700 var(--step-0)/1.2 var(--font-ui); transition: border-color 120ms, background 120ms;
+}
+.btn98.primary { background: var(--lamp); border-color: var(--lamp); color: var(--lamp-ink); }
+.btn98:hover, .btn98:focus { border-color: var(--lamp); outline: none; box-shadow: 0 0 0 3px var(--lamp-glow); }
+.btn98.primary:hover, .btn98.primary:focus { background: #ffb43d; box-shadow: 0 0 0 3px rgb(245 165 36 / 0.45); }
+
+.hello-greet { font: 800 var(--step-3)/1 var(--font-display); letter-spacing: -0.035em; }
+.hello-clock { margin: 8px 0 10px; }
+.hello-clock span { font: 700 2.6rem/0.9 var(--font-display); color: var(--lamp); font-variant-numeric: tabular-nums; letter-spacing: -0.03em; }
+.hello-clock small { color: var(--muted); }
+.hello-lines { padding: 0; color: var(--muted); }
+.tip { padding: 10px 12px; background: var(--cushion); border-radius: var(--r-m); box-shadow: inset 3px 0 0 var(--lamp); color: var(--muted); font-size: var(--step--1); }
+.tip b { color: var(--text); margin-right: 4px; }
+
+.wx-now svg { width: 56px; color: var(--lamp); }
+.wx-now b { font: 800 3rem/0.9 var(--font-display); letter-spacing: -0.04em; }
+.wx-now span { color: var(--muted); }
+.wx-more { margin: 8px 0 12px; color: var(--muted); font-size: var(--step--1); }
+.wx-row { padding: 10px 0 0; border-top: 1px solid var(--seam); }
+.wx-row svg { width: 24px; color: var(--text); }
+.wx-row span { color: var(--muted); font-size: var(--step--1); }
+.wx-row b { font: 700 var(--step-0)/1 var(--font-display); }
+.wx-row small { color: #8bb8ff; font-size: 12px; }
+.wx-days small { color: var(--muted); }
+
+.watch-row { border-radius: var(--r-m); }
+.watch-row:hover, .watch-row:focus { background: var(--cushion); outline: none; box-shadow: inset 3px 0 0 var(--lamp); }
+.watch-row small { color: var(--muted); font-size: var(--step--1); }
+.watch-list li + li { border-top: 1px solid var(--seam); }
+
+.ibov span { color: var(--muted); }
+.ibov b { font: 800 var(--step-2)/1 var(--font-display); letter-spacing: -0.02em; }
+.ibov .up, .quotes .up { color: #5ccf8a; }
+.ibov .down, .quotes .down { color: var(--on-air); }
+.quotes { font-size: var(--step--1); }
+.quotes th, .quotes td { border-top: 1px solid var(--seam); }
+.quotes th small { color: var(--muted); }
+
+.launch-mission { font: 700 var(--step-1)/1.2 var(--font-display); }
+.launch-rocket { margin: 2px 0 10px; color: var(--muted); }
+.launch-count { font: 800 2.2rem/1 var(--font-display); color: var(--lamp); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+
+/* ---------- faixa de baixo do início: manchetes, tempo e relógio ---------- */
+.taskbar { background: var(--sofa); border-top: 1px solid var(--seam); }
+.task-main { padding: 6px 16px 6px 4px; }
+.ticker { height: 32px; }
+.ticker-run { font-size: var(--step--1); color: var(--text); }
+.ticker-run b { margin: 0 12px 0 24px; padding: 2px 8px; border-radius: 999px; background: var(--cushion); color: var(--lamp); font: 700 12px/1.3 var(--font-ui); }
+.ticker-run small { color: var(--muted); }
+.tray { color: var(--muted); font-size: var(--step--1); }
+.tray b { font: 700 var(--step-1)/1 var(--font-display); color: var(--text); font-variant-numeric: tabular-nums; }
+
+/* ---------- troca entre o início e o resto: esmaece ---------- */
+#main.enter { animation: enter 180ms var(--ease); }
+@keyframes enter { from { opacity: 0; transform: translateY(6px); } }
+
+/* ---------- entrada: o nome acende como um abajur ---------- */
+#boot { background: radial-gradient(ellipse at 50% 45%, #2a1f33, var(--night) 70%); color: var(--text); }
+#boot .boot-title { position: absolute; top: 16%; left: 0; right: 0; margin: 0; text-align: center; font: 800 var(--step-3)/1 var(--font-display); letter-spacing: -0.035em; }
+#boot .post { position: absolute; top: 30%; left: 50%; width: min(560px, 90%); transform: translateX(-50%); font: 400 var(--step-1)/2 var(--font-ui); color: var(--muted); }
+#boot .step { display: inline-block; min-width: 240px; }
+#boot .spin { color: var(--lamp); }
+#boot .ok { color: var(--text); }
+#boot .bad { color: var(--on-air); }
+#boot .boot-skip { font: 400 var(--step--1)/1 var(--font-ui); color: var(--muted); }
+.splash-name { margin: 0; font: 800 6rem/0.9 var(--font-display); letter-spacing: -0.05em; color: var(--text); animation: lamp 1200ms var(--ease) forwards; }
+.splash-tag { margin: 14px 0 30px; color: var(--muted); font: 400 var(--step-1)/1 var(--font-ui); }
+.splash-bar { width: 240px; height: 3px; overflow: hidden; border-radius: 2px; background: var(--seam); }
+.splash-bar i { background: var(--lamp); }
+@keyframes lamp { from { text-shadow: 0 0 0 rgb(245 165 36 / 0); } to { text-shadow: 0 0 48px rgb(245 165 36 / 0.55); } }
