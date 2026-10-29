@@ -76,9 +76,13 @@ function row(c, now, { isCurrent, isFav, byProgram, withEnd, downAt }) {
   </li>`;
 }
 
-// Título da categoria antes do primeiro canal dela (só separa: ↑↓ e CH± passam direto)
-const groupHead = (list, i) => (i === 0 || list[i - 1].group !== list[i].group
-  ? `<li class="group-head"><h2>${esc(prettyGroup(list[i].group))}</h2></li>` : "");
+// Selo da categoria antes do primeiro canal dela, com quantos canais tem (só separa: ↑↓ e CH± passam direto)
+function groupHead(list, i) {
+  const g = list[i].group;
+  if (i > 0 && list[i - 1].group === g) return "";
+  const n = list.filter((c) => c.group === g).length;
+  return `<li class="group-head"><h2><span>${esc(prettyGroup(g))}</span><small>${n}</small></h2></li>`;
+}
 
 /** down: Map link -> quando não abriu. grouped: título de categoria entre os canais (a lista vem ordenada por ela). */
 export function rowsHtml(list, from, to, { currentId, favs, down, byProgram = false, withEnd = false, grouped = false }) {

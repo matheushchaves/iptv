@@ -239,8 +239,14 @@ img { display: block; }
 .channels { list-style: none; margin: 0; padding: 0 8px 24px; }
 .channel { position: relative; }
 /* Agora na TV: categoria antes dos canais dela */
-.group-head h2 { margin: 0; padding: 18px 10px 6px; font: 700 var(--step-0)/1.2 var(--font-display); color: var(--muted); letter-spacing: -0.01em; }
-.group-head:first-child h2 { padding-top: 4px; }
+.group-head { padding: 18px 10px 8px; }
+.group-head:first-child { padding-top: 4px; }
+.group-head h2 {
+  display: inline-flex; align-items: baseline; margin: 0; padding: 5px 12px;
+  background: var(--cushion); border: 1px solid var(--seam); border-radius: 999px;
+  font: 700 var(--step--1)/1.2 var(--font-display); letter-spacing: -0.01em; color: var(--text);
+}
+.group-head small { margin-left: 8px; color: var(--muted); font: 400 var(--step--1) var(--font-ui); font-variant-numeric: tabular-nums; }
 .ch {
   width: 100%; display: grid; grid-template-columns: 3.2ch 48px minmax(0, 1fr); gap: 12px; align-items: center;
   padding: 9px 40px 9px 10px; background: none; border: 0; border-radius: var(--r-m);
