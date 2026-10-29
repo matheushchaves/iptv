@@ -1,9 +1,11 @@
 // Ao vivo: lista numerada (andar com ↑↓, zapear com CH+/CH− ou digitando o número) e guia do canal atual.
-// "Agora na TV" (@now) é a mesma lista, só com os canais que têm programa passando, pelo nome do programa;
-// "Filmes passando agora" (@movies), só os que estão passando um filme do catálogo, do mais bem avaliado ao menos.
+// "Agora na TV" (@now) é a mesma lista, só com os canais que têm programa passando, separados por categoria na
+// ordem da coluna ("o que está passando de notícia?") e, dentro dela, pelo número; o canal fica em destaque;
+// "Filmes passando agora" (@movies), só os que estão passando um filme do catálogo, pelo nome do filme, do mais
+// bem avaliado ao menos (ali se escolhe pelo filme).
 // Programa do guia que é filme ou série do catálogo tem "vod" (nota, ano, sinopse, link do filme): vem do servidor.
 // Cada canal pode ter várias versões (FHD, HD, SD, reserva): o servidor junta, e c.urls tem os links de todas.
-import { esc, fold, groupNote, hhmm, meter, nowProg, plural, ratingHtml, STAR } from "./util.js";
+import { esc, fold, groupNote, hhmm, meter, nowProg, plural, prettyGroup, ratingHtml, STAR } from "./util.js";
 import { fullscreenButton } from "./player.js";
 
 export const PAGE_ROWS = 100; // TV fraca: a lista cresce em lotes conforme rola
@@ -29,14 +31,20 @@ export function movieOnAir(c, now = Date.now()) {
 export const moviesOnAirCount = (channels, now = Date.now()) => channels.filter((c) => movieOnAir(c, now)).length;
 const byRating = (now) => (a, b) => (movieOnAir(b, now).vod.rating || 0) - (movieOnAir(a, now).vod.rating || 0);
 
+// A ordem das categorias é a da coluna da esquerda (a de quando aparecem na lista)
+function byCategory(channels) {
+  const rank = new Map();
+  channels.forEach((c) => c.groups.forEach((g) => { if (!rank.has(g)) rank.set(g, rank.size); }));
+  return (a, b) => rank.get(a.group) - rank.get(b.group) || a.num - b.num;
+}
+
 export function filter(channels, { group, q, favs }) {
   const now = Date.now();
   const words = fold(q).split(/\s+/).filter(Boolean);
   const inGroup = (c) => (group === "@fav" ? isFav(c, favs) : group === "@now" ? !!nowProg(c.epg, now)
     : group === "@movies" ? !!movieOnAir(c, now) : !group || c.groups.includes(group));
   const found = channels.filter((c) => inGroup(c) && words.every((w) => c.key.includes(w)));
-  // Agora na TV: o que acabou de começar vem primeiro
-  if (group === "@now") return found.sort((a, b) => nowProg(b.epg, now).start - nowProg(a.epg, now).start);
+  if (group === "@now") return found.sort(byCategory(channels));
   return group === "@movies" ? found.sort(byRating(now)) : found;
 }
 
@@ -45,14 +53,14 @@ function favButton(id, name, isFav) {
   return `<button type="button" class="fav" data-fav="${id}" aria-pressed="${isFav}" aria-label="${esc(label)}" title="${esc(label)}">${STAR}</button>`;
 }
 
-/** byProgram: o nome do programa em destaque (Agora na TV); downAt: quando o canal não abriu neste aparelho.
- *  A nota fica ao lado do nome do programa, onde quer que ele esteja. */
-function row(c, now, { isCurrent, isFav, byProgram, downAt }) {
+/** byProgram: o nome do filme em destaque (Filmes agora); withEnd: até que horas vai o programa (Agora na TV);
+ *  downAt: quando o canal não abriu neste aparelho. A nota fica ao lado do nome do programa, onde quer que ele esteja. */
+function row(c, now, { isCurrent, isFav, byProgram, withEnd, downAt }) {
   const p = nowProg(c.epg, now);
   const logo = c.logo ? `<img src="${esc(c.logo)}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : "";
   const name = byProgram && p ? p.title : c.name;
   const sub = downAt ? `Não abriu às ${hhmm(downAt)}` : byProgram && p ? `${c.name}, até ${hhmm(p.stop)}`
-    : p ? p.title : groupNote(c.group);
+    : p && withEnd ? `${p.title}, até ${hhmm(p.stop)}` : p ? p.title : groupNote(c.group);
   const stars = p && p.vod && !downAt ? ratingHtml(p.vod.rating) : "";
   return `<li class="channel${downAt ? " down" : ""}">
     <button type="button" class="ch" data-ch="${c.id}" aria-current="${isCurrent}">
@@ -68,11 +76,15 @@ function row(c, now, { isCurrent, isFav, byProgram, downAt }) {
   </li>`;
 }
 
-/** down: Map link -> quando não abriu. */
-export function rowsHtml(list, from, to, { currentId, favs, down, byProgram = false }) {
+// Título da categoria antes do primeiro canal dela (só separa: ↑↓ e CH± passam direto)
+const groupHead = (list, i) => (i === 0 || list[i - 1].group !== list[i].group
+  ? `<li class="group-head"><h2>${esc(prettyGroup(list[i].group))}</h2></li>` : "");
+
+/** down: Map link -> quando não abriu. grouped: título de categoria entre os canais (a lista vem ordenada por ela). */
+export function rowsHtml(list, from, to, { currentId, favs, down, byProgram = false, withEnd = false, grouped = false }) {
   const now = Date.now();
-  return list.slice(from, to).map((c) => row(c, now, {
-    isCurrent: c.id === currentId, isFav: isFav(c, favs), byProgram, downAt: downSince(c, down),
+  return list.slice(from, to).map((c, k) => (grouped ? groupHead(list, from + k) : "") + row(c, now, {
+    isCurrent: c.id === currentId, isFav: isFav(c, favs), byProgram, withEnd, downAt: downSince(c, down),
   })).join("");
 }
 

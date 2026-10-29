@@ -238,6 +238,9 @@ img { display: block; }
 .list-head p, .grid-head p { margin: 0; color: var(--muted); font-size: var(--step--1); white-space: nowrap; }
 .channels { list-style: none; margin: 0; padding: 0 8px 24px; }
 .channel { position: relative; }
+/* Agora na TV: categoria antes dos canais dela */
+.group-head h2 { margin: 0; padding: 18px 10px 6px; font: 700 var(--step-0)/1.2 var(--font-display); color: var(--muted); letter-spacing: -0.01em; }
+.group-head:first-child h2 { padding-top: 4px; }
 .ch {
   width: 100%; display: grid; grid-template-columns: 3.2ch 48px minmax(0, 1fr); gap: 12px; align-items: center;
   padding: 9px 40px 9px 10px; background: none; border: 0; border-radius: var(--r-m);

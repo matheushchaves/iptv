@@ -182,7 +182,9 @@ const liveHeading = () => (state.q ? `Busca por “${state.q}”` : PINNED_HEADI
   || (state.group ? prettyGroup(state.group) : ALL_LABEL.live));
 
 const rowOptions = () => ({
-  currentId: playingChannelId(), favs: favorites.set(), down: downChannels.map(), byProgram: (state.group === "@now" || state.group === "@movies") && !state.q,
+  currentId: playingChannelId(), favs: favorites.set(), down: downChannels.map(),
+  byProgram: state.group === "@movies" && !state.q,
+  withEnd: state.group === "@now" && !state.q, grouped: state.group === "@now" && !state.q,
 });
 
 const focusSelector = (el) => (el.dataset.ch ? `[data-ch="${el.dataset.ch}"]` : el.dataset.fav ? `[data-fav="${el.dataset.fav}"]` : null);
