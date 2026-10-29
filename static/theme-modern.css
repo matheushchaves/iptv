@@ -71,22 +71,35 @@ body[data-view="home"] #main { overflow-y: auto; }
 .ticker-run small { color: var(--muted); }
 .tray { color: var(--muted); font-size: var(--step--1); }
 .tray b { font: 700 var(--step-1)/1 var(--font-display); color: var(--text); font-variant-numeric: tabular-nums; }
+.taskbar .replay {
+  flex: none; margin: 0 12px; padding: 6px 12px; border: 1px solid var(--seam); border-radius: 999px; background: none;
+  color: var(--muted); font: 700 var(--step--1)/1 var(--font-ui); cursor: pointer;
+}
+.taskbar .replay:hover, .taskbar .replay:focus { color: var(--text); border-color: var(--lamp); outline: none; box-shadow: 0 0 0 3px var(--lamp-glow); }
 
 /* ---------- troca entre o início e o resto: esmaece ---------- */
 #main.enter { animation: enter 180ms var(--ease); }
 @keyframes enter { from { opacity: 0; transform: translateY(6px); } }
 
-/* ---------- entrada: o nome acende como um abajur ---------- */
-#boot { background: radial-gradient(ellipse at 50% 45%, #2a1f33, var(--night) 70%); color: var(--text); }
-#boot .boot-title { position: absolute; top: 16%; left: 0; right: 0; margin: 0; text-align: center; font: 800 var(--step-3)/1 var(--font-display); letter-spacing: -0.035em; }
-#boot .post { position: absolute; top: 30%; left: 50%; width: min(560px, 90%); transform: translateX(-50%); font: 400 var(--step-1)/2 var(--font-ui); color: var(--muted); }
-#boot .step { display: inline-block; min-width: 240px; }
-#boot .spin { color: var(--lamp); }
-#boot .ok { color: var(--text); }
-#boot .bad { color: var(--on-air); }
+/* ---------- entrada: a sala escura, o abajur acende e os números do dia chegam em cartões ---------- */
+#boot { background: #0b080e; color: var(--text); }
+#boot .lamp {
+  position: absolute; left: 50%; top: -55vh; width: 150vh; height: 150vh; margin-left: -75vh; border-radius: 50%;
+  background: radial-gradient(circle, rgb(245 165 36 / 0.34), rgb(245 165 36 / 0.1) 38%, rgb(32 25 39 / 0.6) 60%, transparent 70%);
+  opacity: 0; transform: scale(0.35); transition: opacity 1500ms var(--ease), transform 2200ms var(--ease);
+}
+#boot.on .lamp { opacity: 1; transform: none; }
+.m-boot { position: absolute; top: 30%; left: 0; right: 0; display: grid; justify-items: center; padding: 0 32px; }
+.m-name {
+  margin: 0; font: 800 7rem/0.9 var(--font-display); letter-spacing: -0.05em; color: var(--text);
+  opacity: 0; transform: translateY(14px); transition: opacity 1000ms var(--ease), transform 1000ms var(--ease), text-shadow 1600ms var(--ease);
+}
+.m-name.in { opacity: 1; transform: none; text-shadow: 0 0 56px rgb(245 165 36 / 0.5); }
+.m-chips { display: flex; flex-wrap: wrap; justify-content: center; max-width: 960px; margin: 40px 0 0; padding: 0; list-style: none; }
+.m-chips li {
+  margin: 6px; padding: 9px 16px; border: 1px solid var(--seam); border-radius: 999px; background: rgb(32 25 39 / 0.75);
+  font: 400 var(--step-0)/1.2 var(--font-ui); animation: chip 600ms var(--ease) both;
+}
+.m-chips small { margin-right: 8px; color: var(--lamp); font-weight: 700; font-size: var(--step--1); }
+@keyframes chip { from { opacity: 0; transform: translateY(10px); } }
 #boot .boot-skip { font: 400 var(--step--1)/1 var(--font-ui); color: var(--muted); }
-.splash-name { margin: 0; font: 800 6rem/0.9 var(--font-display); letter-spacing: -0.05em; color: var(--text); animation: lamp 1200ms var(--ease) forwards; }
-.splash-tag { margin: 14px 0 30px; color: var(--muted); font: 400 var(--step-1)/1 var(--font-ui); }
-.splash-bar { width: 240px; height: 3px; overflow: hidden; border-radius: 2px; background: var(--seam); }
-.splash-bar i { background: var(--lamp); }
-@keyframes lamp { from { text-shadow: 0 0 0 rgb(245 165 36 / 0); } to { text-shadow: 0 0 48px rgb(245 165 36 / 0.55); } }

@@ -1,4 +1,5 @@
-// O início: o bem-vindo, o tempo, o que vale assistir agora, o mercado e o próximo foguete. No tema retrô é a área
+// O início: o bem-vindo, o tempo, o que vale assistir agora, o mercado e o próximo foguete; embaixo, manchetes de
+// tecnologia em português (Tecnoblog, Canaltech, TecMundo, Meio Bit). No tema retrô é a área
 // de trabalho do Sofá 98 (janelas, ícones, barra de tarefas com Iniciar); no moderno, os mesmos blocos em cartões.
 // A barra de tarefas é uma só para todas as telas (no retrô ela fica em todas; no moderno, só no início).
 // Feita para o controle da TV: no início as setas andam entre os botões pela posição na tela (moveFocus); nas outras
@@ -31,6 +32,11 @@ const ICONS = [["#ao-vivo", "tv", "Ao vivo"], ["#filmes", "film", "Filmes"], ["#
 const brl = (v, digits = 2) => `R$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
 const pct = (v) => `${v > 0 ? "+" : ""}${v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
 const longDate = (d) => d.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
+// Quando a manchete saiu: a hora, se foi hoje; senão, o dia
+const published = (at) => {
+  const d = new Date(at);
+  return d.toDateString() === new Date().toDateString() ? hhmm(at) : d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+};
 const weekday = (iso) => new Date(`${iso}T12:00:00`).toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", "");
 
 function greeting(now) {
@@ -198,7 +204,7 @@ export function renderTaskbar({ desk, view }) {
   const el = document.getElementById("taskbar");
   const news = (desk && desk.news) || [];
   const w = desk && desk.weather;
-  const headlines = news.map((n) => `<span>${esc(n.title)} <small>${esc(n.site)}, ${n.score} pontos</small></span>`).join("");
+  const headlines = news.map((n) => `<span>${esc(n.title)} <small>${esc(n.source)}, ${published(n.at)}</small></span>`).join("");
   const section = SECTIONS[view];
   // Fora do início, a barra é do ponteiro: as setas do controle continuam só na lista
   const tab = view === "home" ? "" : ' tabindex="-1"';
@@ -208,9 +214,10 @@ export function renderTaskbar({ desk, view }) {
       <button type="button" class="start" data-action="start" aria-expanded="false" aria-controls="startMenu"${tab}>${icon("sofa")}<span>Iniciar</span></button>
       <span class="task-sep" aria-hidden="true"></span>
       ${section ? `<a class="task-app" href="#inicio"${tab} title="Voltar à área de trabalho">${icon(section[0])}<span>Sofá — ${section[1]}</span></a>` : ""}
-      <div class="ticker" aria-label="Manchetes do Hacker News">${news.length && !section
+      <button type="button" class="replay" data-action="reboot"${tab}>Ver a entrada</button>
+      <div class="ticker" aria-label="Manchetes de tecnologia">${news.length && !section
         ? `<div class="ticker-run" style="animation-duration:${Math.max(40, news.reduce((n, x) => n + x.title.length, 0) / 3)}s">
-            <b>Hacker News</b>${headlines}<b aria-hidden="true">Hacker News</b>${headlines.replace(/<span>/g, '<span aria-hidden="true">')}</div>`
+            <b>Notícias</b>${headlines}<b aria-hidden="true">Notícias</b>${headlines.replace(/<span>/g, '<span aria-hidden="true">')}</div>`
         : ""}</div>
       <div class="tray">${w ? `${icon(weatherLook(w.now.code, w.now.day).icon)}<span>${w.now.temp}°</span>` : ""}<b data-clock>${hhmm(new Date())}</b></div>
     </div>${startMenu()}`;

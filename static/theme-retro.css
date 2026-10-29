@@ -174,6 +174,7 @@ form.add input:not([type="radio"]) { background: #fff; color: var(--w-text); bor
 }
 .task-app svg { width: 22px; margin-right: 8px; }
 .task-app:hover, .task-app:focus { outline: 1px dotted #000; outline-offset: -6px; }
+.taskbar .replay { display: none; } /* no retrô, "Reiniciar o Sofá" fica no menu Iniciar */
 .ticker { background: var(--w-face); box-shadow: var(--bevel-in); }
 .ticker:empty { box-shadow: none; }
 .ticker-run { font-size: 15px; }

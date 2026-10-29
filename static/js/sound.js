@@ -1,4 +1,5 @@
-// Sons da entrada no tema retrô: o bipe da BIOS, o HD lendo a cada linha e um acorde de abertura. Tudo sintetizado
+// Sons da entrada. Retrô: o bipe da BIOS, o HD lendo a cada linha e um acorde de abertura. Moderno: o clique do
+// interruptor do abajur e um tom grave e suave. Tudo sintetizado
 // aqui (nada de arquivo de áudio; o acorde é nosso, não o de nenhum sistema). O navegador pode não deixar tocar antes
 // de alguém apertar um botão: aí a entrada fica muda, e "Reiniciar o Sofá" (um clique) toca normalmente.
 const KEY = "iptv.sound";
@@ -70,4 +71,28 @@ export function startupChime() {
     tone(a, { freq, at, len, gain: VOLUME * (i === 4 ? 0.35 : 0.55) });
     tone(a, { freq, at, len, gain: VOLUME * 0.3, type: "sine", detune: 7 });
   });
+}
+
+/** O clique do interruptor do abajur: um estalo curto e uma batidinha grave. */
+export function lampClick() {
+  const a = audio();
+  if (!a) return;
+  const buffer = a.createBuffer(1, Math.floor(a.sampleRate * 0.018), a.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+  const snap = a.createBufferSource(), high = a.createBiquadFilter(), env = a.createGain();
+  snap.buffer = buffer;
+  high.type = "highpass";
+  high.frequency.value = 2500;
+  env.gain.value = VOLUME * 0.9;
+  snap.connect(high).connect(env).connect(a.destination);
+  snap.start();
+  tone(a, { freq: 95, type: "sine", len: 0.09, gain: VOLUME * 0.6 });
+}
+
+/** A luz enchendo a sala: um acorde grave que entra devagar e some devagar. */
+export function warmTone() {
+  const a = audio();
+  if (!a) return;
+  [196, 293.66, 392].forEach((freq, i) => tone(a, { freq, type: "sine", at: 0.15 + i * 0.12, len: 3.4, gain: VOLUME * 0.28 }));
 }
