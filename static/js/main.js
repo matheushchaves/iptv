@@ -655,8 +655,8 @@ function redrawDownMarks() {
 
 const versionLabel = (ch, url) => (ch.variants.find((v) => v.url === url) || {}).label;
 
-// Uma versão falhou (não abriu ou parou de responder): tenta a próxima que ainda não falhou
-function tryNextVersion(entry, opened) {
+// Uma versão falhou (não abriu, parou de responder ou travou): tenta a próxima que ainda não falhou
+function tryNextVersion(entry, why) {
   const ch = state.live[entry.id];
   if (!ch || !live.hasUrl(ch, entry.url)) return false;
   const tried = [...entry.tried, entry.url];
@@ -664,14 +664,18 @@ function tryNextVersion(entry, opened) {
   const next = ch.urls.find((u) => !tried.includes(u) && !down.has(u));
   if (!next) return false;
   player.play(liveEntry(ch, next, tried));
-  player.flash(`${versionLabel(ch, entry.url)} ${opened ? "parou" : "não abriu"}. Tentando ${versionLabel(ch, next)}`);
+  player.flash(`${versionLabel(ch, entry.url)} ${why}. Tentando ${versionLabel(ch, next)}`);
   return true;
 }
 
 player.on("failed", ({ entry, opened }) => {
   if (entry.kind !== "live") return;
   if (!opened) downChannels.mark(entry.url);
-  if (!tryNextVersion(entry, opened) && !opened) redrawDownMarks();
+  if (!tryNextVersion(entry, opened ? "parou" : "não abriu") && !opened) redrawDownMarks();
+});
+// Vídeo parado 20 s com o servidor demorando: troca antes de o player desistir (sem outra versão, segue tentando)
+player.on("stalled", (entry) => {
+  if (entry.kind === "live") tryNextVersion(entry, "travou");
 });
 player.on("playing", (entry) => {
   if (entry.kind !== "live") return;

@@ -10,6 +10,10 @@ const osd = $("#osd");
 const SAVE_EVERY_MS = 5000;
 const OSD_MS = 3500;
 const RETRY_WAIT_MS = [2000, 4000, 8000]; // pausas antes de retomar um canal que deu erro; acabou a lista, desiste
+// Ao vivo parado esse tempo avisa ("stalled"): quando o servidor demora em vez de recusar, o hls.js leva minutos para
+// desistir, e o canal pode ter outra versão funcionando (29/10/2026: Globo News FHD parada, as outras no ar)
+const STALL_MS = 20000;
+const STALL_CHECK_MS = 2000;
 
 export const fullscreenButton = `<button type="button" class="btn full" data-action="fullscreen">Tela cheia</button>`;
 
@@ -20,6 +24,7 @@ let lastSave = 0;
 let osdTimer = null;
 let failed = false;
 let blocked = false;
+let stallTimer = null;
 
 export const on = (type, fn) => bus.addEventListener(type, (e) => fn(e.detail));
 const emit = (type, detail) => bus.dispatchEvent(new CustomEvent(type, { detail }));
@@ -30,6 +35,7 @@ export const isBlocked = () => blocked;
 export const setStatus = (text) => (statusEl.textContent = text);
 
 function reset() {
+  clearInterval(stallTimer);
   if (hls) { hls.destroy(); hls = null; }
   video.removeAttribute("src");
   video.load();
@@ -82,6 +88,24 @@ function playStream(src) {
     start();
   }
   showChannel();
+  watchStall(current);
+}
+
+// Pausado, esperando o OK para começar ou já desistido não conta: só o vídeo que devia andar e não anda
+function watchStall(entry) {
+  let lastTime = -1, since = Date.now();
+  stallTimer = setInterval(() => {
+    if (current !== entry || failed) return clearInterval(stallTimer);
+    if (video.currentTime !== lastTime || video.paused || blocked) {
+      lastTime = video.currentTime;
+      since = Date.now();
+      return;
+    }
+    if (Date.now() - since < STALL_MS) return;
+    clearInterval(stallTimer);
+    api.log(`${entry.num} ${entry.title}: vídeo parado há ${STALL_MS / 1000} s`).catch(() => {});
+    emit("stalled", entry);
+  }, STALL_CHECK_MS);
 }
 
 function startHls(src) {
