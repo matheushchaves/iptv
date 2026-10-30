@@ -90,6 +90,14 @@ export function lampClick() {
   tone(a, { freq: 95, type: "sine", len: 0.09, gain: VOLUME * 0.6 });
 }
 
+/** A TV ligando: duas notas suaves subindo, como o "pronto" de uma TV nova. */
+export function tvOn() {
+  const a = audio();
+  if (!a) return;
+  tone(a, { freq: 523.25, type: "sine", len: 0.5, gain: VOLUME * 0.3 });
+  tone(a, { freq: 783.99, type: "sine", at: 0.12, len: 0.9, gain: VOLUME * 0.25 });
+}
+
 /** A luz enchendo a sala: um acorde grave que entra devagar e some devagar. */
 export function warmTone() {
   const a = audio();
