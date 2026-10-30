@@ -44,7 +44,7 @@ ADS = re.compile(r"\b(cupo(m|ns)|desconto|promo(ção|ções)|oferta)", re.I)  #
 
 
 def owner_name() -> str:
-    """O nome da conta do Mac que roda o servidor ('matheus' -> 'Matheus'), para o bem-vindo."""
+    """O nome da conta do computador que roda o servidor ('maria' -> 'Maria'), para o bem-vindo."""
     try:
         return getpass.getuser().capitalize()
     except Exception:  # sem usuário no ambiente: bem-vindo sem nome

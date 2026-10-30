@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Servidor IPTV local: playlist M3U + EPG XMLTV + proxy HLS. Só stdlib."""
 import hashlib
+import ipaddress
 import json
 import re
 import socket
@@ -72,6 +73,15 @@ def fetch(url, timeout=20, headers=None):
 
 def log(msg):
     print(f"{time.strftime('%H:%M:%S')} {msg}", flush=True)
+
+
+def from_home(addr):
+    """Endereço da rede de casa (ou de uma VPN como o Tailscale), e não da internet. Aberto para a internet, o /proxy
+    buscaria qualquer endereço para qualquer um, e as listas (sem senha no Sofá) ficariam à vista de quem chegasse."""
+    try:
+        return not ipaddress.ip_address(addr).is_global
+    except ValueError:
+        return False
 
 
 def where(url):
@@ -433,6 +443,9 @@ class Handler(BaseHTTPRequestHandler):
 
     def handle_errors(fn):
         def wrapper(self):
+            if not from_home(self.client_address[0]):
+                log(f"recusado: {self.client_address[0]} está fora da rede de casa")
+                return self.send(403, "O Sofá só atende a rede de casa".encode(), "text/plain; charset=utf-8")
             try:
                 fn(self)
             except (BrokenPipeError, ConnectionResetError):

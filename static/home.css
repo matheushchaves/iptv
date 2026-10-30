@@ -87,6 +87,19 @@ body[data-view="home"] #browse { height: 100%; }
 .splash-bar i { display: block; height: 100%; transform-origin: left; transform: scaleX(0); animation: boot-bar linear forwards; }
 @keyframes boot-bar { to { transform: scaleX(1); } }
 
+/* ---------- telas estreitas (celular): uma janela embaixo da outra, a página rola, e as manchetes ganham a
+   linha delas na barra de baixo (o botão do programa aberto sai: não cabe e não faz falta no toque) ---------- */
+@media (max-width: 860px) {
+  body[data-view="home"] #main { overflow: visible; }
+  body[data-view="home"] #browse, .desk { height: auto; }
+  .desk-windows { overflow: visible; grid-template-columns: minmax(0, 1fr); }
+  .win-hello { grid-column: auto; }
+  .task-main { flex-wrap: wrap; }
+  .task-app, .task-sep { display: none; }
+  .tray { margin-left: auto; }
+  .ticker { order: 3; flex-basis: 100%; margin-top: 4px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ticker-run { animation: none; padding-left: 8px; }
 }

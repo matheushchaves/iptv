@@ -7,7 +7,7 @@ from unittest import mock
 
 import desk
 
-PLACE = {"status": "success", "city": "João Pessoa", "region": "PB", "lat": -7.12, "lon": -34.86, "timezone": "America/Fortaleza"}
+PLACE = {"status": "success", "city": "Curitiba", "region": "PR", "lat": -25.43, "lon": -49.27, "timezone": "America/Sao_Paulo"}
 WEATHER = {
     "current": {"time": "2026-10-29T16:00", "temperature_2m": 27.4, "apparent_temperature": 30.1, "relative_humidity_2m": 70,
                 "weather_code": 2, "wind_speed_10m": 18.2, "is_day": 1},
@@ -40,7 +40,7 @@ FEEDS = {
 }
 B3 = {"BizSts": {"cd": "OK"}, "Msg": {"dtTm": "2026-10-29 16:31:04"},
       "Trad": [{"scty": {"SctyQtn": {"curPrc": 169691.16, "prcFlcn": -0.7712}, "symb": "IBOV", "desc": "IBOVESPA"}}]}
-NOW = 1_793_294_400  # 29/10/2026 14:20 em Fortaleza: depois do Falcon 9, antes do GSLV
+NOW = 1_793_294_400  # 29/10/2026 14:20 em Brasília: depois do Falcon 9, antes do GSLV
 
 
 class Web:
@@ -81,7 +81,7 @@ class DeskTest(unittest.TestCase):
     def test_everything_comes_ready_for_the_screen(self):
         data = self.desk(Web()).snapshot()
 
-        self.assertEqual(data["place"], {"city": "João Pessoa", "region": "PB", "lat": -7.12, "lon": -34.86, "tz": "America/Fortaleza"})
+        self.assertEqual(data["place"], {"city": "Curitiba", "region": "PR", "lat": -25.43, "lon": -49.27, "tz": "America/Sao_Paulo"})
         now = data["weather"]["now"]
         self.assertEqual((now["temp"], now["feels"], now["code"], now["day"]), (27, 30, 2, True))
         self.assertEqual([h["hour"] for h in data["weather"]["hours"]], ["19:00", "22:00", "01:00", "04:00"])
@@ -144,8 +144,8 @@ class DeskTest(unittest.TestCase):
 
 class GreetingTest(unittest.TestCase):
     def test_name_comes_from_the_mac_account(self):
-        with mock.patch("getpass.getuser", return_value="matheus"):
-            self.assertEqual(desk.owner_name(), "Matheus")
+        with mock.patch("getpass.getuser", return_value="maria"):
+            self.assertEqual(desk.owner_name(), "Maria")
 
 
 if __name__ == "__main__":

@@ -10,6 +10,9 @@ body:not([data-view="home"]) .taskbar { display: none; }
 /* A barra de cima fica (é uma página do app): o início rola quando não cabe, e o foco do controle leva junto */
 body[data-view="home"] #main { overflow-y: auto; }
 .desk-windows { overflow: visible; padding: 20px 24px 28px; gap: 16px; }
+@media (max-width: 860px) {
+  .desk-windows { padding: 16px; }
+}
 .win { padding: 14px 18px 16px; background: var(--sofa); border: 1px solid var(--seam); border-radius: var(--r-l); }
 .win-title { margin-bottom: 10px; }
 .win-title h2 { font: 700 var(--step--1)/1.2 var(--font-ui); color: var(--muted); letter-spacing: 0.02em; }
@@ -103,3 +106,7 @@ body[data-view="home"] #main { overflow-y: auto; }
 .m-chips small { margin-right: 8px; color: var(--lamp); font-weight: 700; font-size: var(--step--1); }
 @keyframes chip { from { opacity: 0; transform: translateY(10px); } }
 #boot .boot-skip { font: 400 var(--step--1)/1 var(--font-ui); color: var(--muted); }
+@media (max-width: 860px) {
+  .m-name { font-size: 4.5rem; }
+  .m-boot { padding: 0 16px; }
+}

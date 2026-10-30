@@ -911,9 +911,13 @@ function checkVersion() {
 }
 
 // ---------- entrada: o boot conta o que está carregando, com os números de verdade ----------
+// O iPhone também diz "Mac OS X" no navegador, por isso vem antes
+const DEVICES = [[/iPhone|iPad/, "iPhone ou iPad"], [/Android/, "Android"], [/Mac OS X/, "Mac"], [/Windows/, "Windows"], [/Linux/, "Linux"]];
 const deviceName = () => {
-  const chrome = (navigator.userAgent.match(/Chrome\/(\d+)/) || [])[1];
-  const where = ON_TV ? "TV LG (webOS)" : /Mac OS X/.test(navigator.userAgent) ? "Mac" : "Navegador";
+  const ua = navigator.userAgent;
+  const chrome = (ua.match(/Chrome\/(\d+)/) || [])[1];
+  const found = DEVICES.find(([pattern]) => pattern.test(ua));
+  const where = ON_TV ? "TV LG (webOS)" : found ? found[1] : "Navegador";
   return chrome ? `${where}, Chrome ${chrome}` : where;
 };
 

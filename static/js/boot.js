@@ -19,6 +19,8 @@ const SPIN = ["|", "/", "-", "\\"];
 const DAY_KEY = "iptv.bootDay";
 const today = () => new Date().toDateString();
 const NO_ANSWER = "sem resposta";
+// No celular não há tecla: tocar na tela pula do mesmo jeito (o toque chega como clique)
+const SKIP = navigator.maxTouchPoints > 0 ? "Toque na tela para pular" : "Aperte qualquer tecla para pular";
 
 export function shouldBoot() {
   try { return localStorage.getItem(DAY_KEY) !== today(); } catch { return true; }
@@ -38,7 +40,7 @@ const settle = (value, min) => Promise.all([
 
 // ---------- retrô: a BIOS ----------
 async function retro(el, steps, alive) {
-  el.innerHTML = `<pre class="post"></pre><p class="boot-skip">Aperte qualquer tecla para pular</p>`;
+  el.innerHTML = `<pre class="post"></pre><p class="boot-skip">${SKIP}</p>`;
   const post = el.querySelector(".post");
   const print = (html) => post.insertAdjacentHTML("beforeend", `${html}\n`);
   postBeep();
@@ -88,7 +90,7 @@ async function retro(el, steps, alive) {
 async function modern(el, steps, alive) {
   el.innerHTML = `<div class="lamp" aria-hidden="true"></div>
     <div class="m-boot"><p class="m-name">Sofá</p><ul class="m-chips" aria-live="polite"></ul></div>
-    <p class="boot-skip">Aperte qualquer tecla para pular</p>`;
+    <p class="boot-skip">${SKIP}</p>`;
   await sleep(400);
   if (!alive()) return;
   lampClick();

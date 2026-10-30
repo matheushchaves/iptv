@@ -20,7 +20,7 @@ const TIPS = [
   "O 0 sozinho volta para o canal anterior, como na TV a cabo.",
   "Em tela cheia, OK abre a lista rápida de canais por cima do vídeo.",
   "Em tela cheia, ← e → mostram o que está passando e o que vem depois.",
-  "A estrela no canto das capas guarda o filme ou a série na Minha lista, que a TV e o Mac dividem.",
+  "A estrela no canto das capas guarda o filme ou a série na Minha lista, que a TV, o computador e o celular dividem.",
   "Se uma versão do canal travar, o Sofá passa sozinho para outra (FHD, HD, SD…).",
   "“Filmes agora” mostra os filmes do catálogo passando na TV, do mais bem avaliado para o menos.",
   "Pegou o filme no meio? No guia do canal, “Assistir do começo” abre ele do início.",

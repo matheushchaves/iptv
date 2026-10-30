@@ -486,6 +486,18 @@ class CatalogApiTest(unittest.TestCase):
         status, data = self.get_json("/api/catalog?playlist=zzz")
         self.assertEqual((status, data["error"]), (404, "Playlist não encontrada"))
 
+    def test_requests_from_outside_the_home_network_are_refused(self):
+        out = io.StringIO()
+        with mock.patch.object(server, "from_home", return_value=False), redirect_stdout(out):
+            self.assertEqual(self.get("/api/playlists")[0], 403)
+            self.assertEqual(self.get("/proxy?u=" + quote("http://192.168.0.1/", safe=""))[0], 403)
+            req = urllib.request.Request(self.base + "/api/playlists/t1", method="DELETE")
+            with self.assertRaises(urllib.error.HTTPError) as caught:
+                urllib.request.urlopen(req, timeout=5)
+            self.assertEqual(caught.exception.code, 403)
+        self.assertIn("127.0.0.1 está fora da rede de casa", out.getvalue())
+        self.assertEqual(self.get_json("/api/playlists")[1][0]["id"], "t1")  # nada foi apagado
+
     def test_serves_static_scripts_but_not_files_outside_static(self):
         status, ctype, body = self.get("/static/js/main.js")
         self.assertEqual((status, body), (200, b"export {};"))
@@ -493,6 +505,17 @@ class CatalogApiTest(unittest.TestCase):
 
         self.assertEqual(self.get("/static/../t1.m3u")[0], 404)
         self.assertEqual(self.get("/static/js/nao-existe.js")[0], 404)
+
+
+class HomeNetworkTest(unittest.TestCase):
+    def test_home_network_and_vpn_addresses_are_served(self):
+        # 100.x é o Tailscale (VPN para assistir fora de casa)
+        for addr in ("127.0.0.1", "192.168.1.50", "10.0.0.7", "172.16.5.9", "100.101.102.103", "::1", "fe80::1"):
+            self.assertTrue(server.from_home(addr), addr)
+
+    def test_internet_addresses_are_refused(self):
+        for addr in ("8.8.8.8", "177.12.34.56", "2804:14c::1", "nao-e-ip"):
+            self.assertFalse(server.from_home(addr), addr)
 
 
 class RewriteM3u8Test(unittest.TestCase):
