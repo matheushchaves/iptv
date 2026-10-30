@@ -86,8 +86,8 @@ body[data-view="home"] #main { overflow-y: auto; }
 
 /* ---------- entrada: a sala à noite, vista do sofá ----------
    O desenho fica sempre em 16:9 (as camadas usam % das coordenadas dele). A sala começa no escuro (.mb-dark por cima),
-   o abajur acende (.lamp-on: a luz, o cone e a cúpula), a TV liga (.tv-on) com o nome e os números do dia, e no fim o
-   conjunto cresce até a tela da TV cobrir a janela (.zoom), já na cor do fundo do app. */
+   clareia (.lit: o abajur à noite, o sol de dia, a lua de madrugada), a TV liga (.tv-on) com o nome e os números do
+   dia, e no fim o conjunto cresce até a tela da TV cobrir a janela (.zoom), já na cor do fundo do app. */
 #boot { background: #050307; color: var(--text); }
 .mb-room { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transition: transform 1150ms cubic-bezier(0.65, 0, 0.35, 1); }
 /* Cobre a tela toda (corta um pouco dos lados ou de cima, conforme a proporção); sem max(), fica na largura */
@@ -105,6 +105,9 @@ body[data-view="home"] #main { overflow-y: auto; }
 .mb-svg, .mb-dark, .mb-light, .mb-tvglow { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 .mb-svg { display: block; }
 .mb-dark { background: #050307; opacity: 0.93; transition: opacity 1800ms var(--ease); }
+/* A sombra da sala não cobre o vidro da janela: lá fora (sol, céu, lua) tem a própria luz. Navegador sem o recorte só
+   escurece a janela junto */
+.mb-dark { clip-path: polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, 78.25% 16.89%, 91.125% 16.89%, 91.125% 46.44%, 78.25% 46.44%, 78.25% 16.89%); }
 .mb-light {
   background: radial-gradient(circle at 16.25% 28.9%, rgb(255 205 130 / 0.5), rgb(245 165 36 / 0.16) 20%, rgb(245 165 36 / 0.05) 42%, transparent 62%);
 }
@@ -121,10 +124,46 @@ body[data-view="home"] #main { overflow-y: auto; }
 .mb-light, .mb-cone, .mb-tvglow { opacity: 0; transition: opacity 1500ms var(--ease); }
 .mb-shade { opacity: 0; transition: opacity 160ms; } /* o interruptor é na hora; a sala enche de luz devagar */
 .mb-rim { opacity: 0; transition: opacity 1600ms var(--ease) 200ms; }
-#boot.lamp-on .mb-dark { opacity: 0.3; }
-#boot.lamp-on .mb-light, #boot.lamp-on .mb-cone, #boot.lamp-on .mb-shade { opacity: 1; }
-#boot.lamp-on .mb-rim { opacity: 0.5; }
 #boot.tv-on .mb-tvglow { opacity: 1; }
+
+/* A hora do dia (.mb-manha, .mb-tarde, .mb-noite, .mb-madrugada): o céu da janela e o que clareia a sala (.lit) */
+.mb-day, .mb-beam { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 2000ms var(--ease); }
+.mb-beam { clip-path: polygon(77.5% 47.8%, 91.9% 47.8%, 78% 81.5%, 58% 81.5%); } /* o feixe da janela até o chão, atrás do sofá */
+.mb-late-stars, .mb-morning-sky, .mb-afternoon-sky { display: none; }
+#boot.mb-madrugada .mb-late-stars, #boot.mb-manha .mb-morning-sky, #boot.mb-tarde .mb-afternoon-sky { display: inline; }
+#boot.mb-manha .mb-night-sky, #boot.mb-tarde .mb-night-sky { display: none; }
+#boot.lit .mb-day, #boot.lit .mb-beam { opacity: 1; }
+
+/* Noite: o abajur acende */
+#boot.mb-noite.lit .mb-dark { opacity: 0.3; }
+#boot.mb-noite.lit .mb-light, #boot.mb-noite.lit .mb-cone, #boot.mb-noite.lit .mb-shade { opacity: 1; }
+#boot.mb-noite.lit .mb-rim { opacity: 0.5; }
+
+/* Manhã: o sol baixo entra pela janela num feixe comprido, a sala clareia aos poucos */
+#boot.mb-manha .mb-dark { opacity: 0.8; }
+#boot.mb-manha.lit .mb-dark { opacity: 0.22; }
+#boot.mb-manha .mb-day {
+  background: radial-gradient(circle at 84.7% 32%, rgb(255 238 205 / 0.3), rgb(255 220 180 / 0.08) 30%, transparent 55%), rgb(255 214 170 / 0.07);
+}
+#boot.mb-manha .mb-beam { background: linear-gradient(rgb(255 240 205 / 0.22), rgb(255 228 185 / 0.03)); }
+
+/* Tarde: céu azul, sol alto, um feixe dourado mais curto */
+#boot.mb-tarde .mb-dark { opacity: 0.75; }
+#boot.mb-tarde.lit .mb-dark { opacity: 0.2; }
+#boot.mb-tarde .mb-day {
+  background: radial-gradient(circle at 84.7% 32%, rgb(255 220 160 / 0.3), rgb(255 190 110 / 0.08) 30%, transparent 55%), rgb(255 190 120 / 0.06);
+}
+#boot.mb-tarde .mb-beam {
+  clip-path: polygon(77.5% 47.8%, 91.9% 47.8%, 86% 81.5%, 68% 81.5%);
+  background: linear-gradient(rgb(255 200 120 / 0.26), rgb(245 165 36 / 0.04));
+}
+#boot.mb-tarde.lit .mb-rim { opacity: 0.2; }
+
+/* Madrugada: o abajur fica apagado; só a lua entra, azulada, e é a TV que clareia a sala quando liga */
+#boot.mb-madrugada.lit .mb-dark { opacity: 0.68; }
+#boot.mb-madrugada.tv-on .mb-dark { opacity: 0.5; }
+#boot.mb-madrugada .mb-beam { background: linear-gradient(rgb(150 176 235 / 0.22), rgb(120 150 220 / 0.02)); }
+#boot.mb-madrugada .mb-tvglow { background: radial-gradient(ellipse 42% 50% at 50% 45%, rgb(190 170 215 / 0.34), transparent); }
 
 /* A tela da TV: o mesmo ameixa do app, para a entrada terminar dentro dele */
 .mb-tv {

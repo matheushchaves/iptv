@@ -90,6 +90,33 @@ export function lampClick() {
   tone(a, { freq: 95, type: "sine", len: 0.09, gain: VOLUME * 0.6 });
 }
 
+/** Um piado: a nota escorrega para cima e some rápido. */
+function chirp(a, at, freq) {
+  const t = a.currentTime + at;
+  const osc = a.createOscillator(), env = a.createGain();
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(freq, t);
+  osc.frequency.exponentialRampToValueAtTime(freq * 1.35, t + 0.09);
+  env.gain.setValueAtTime(0.0001, t);
+  env.gain.exponentialRampToValueAtTime(VOLUME * 0.18, t + 0.02);
+  env.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+  osc.connect(env).connect(a.destination);
+  osc.start(t);
+  osc.stop(t + 0.15);
+}
+
+/** De manhã, o sol entrando: três piados de passarinho lá fora. */
+export function birds() {
+  const a = audio();
+  if (a) [[0, 2600], [0.22, 3100], [0.5, 2800]].forEach(([at, freq]) => chirp(a, at, freq));
+}
+
+/** De madrugada: só um zumbido grave e baixinho, a casa dormindo. */
+export function nightHum() {
+  const a = audio();
+  if (a) tone(a, { freq: 110, type: "sine", len: 2.6, gain: VOLUME * 0.12 });
+}
+
 /** A TV ligando: duas notas suaves subindo, como o "pronto" de uma TV nova. */
 export function tvOn() {
   const a = audio();

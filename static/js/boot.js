@@ -1,19 +1,20 @@
 // Entrada do Sofá: conta o que está carregando, com os números de verdade da lista (a espera pela lista e pelo tempo
 // vira o show). Retrô: a tela de BIOS (memória contando, bipe, HD a cada linha) e o logo com o acorde. Moderno: a sala
 // à noite vista do sofá; o abajur acende, a TV liga com o nome e os números do dia, e a câmera entra na TV, que vira o
-// app. Qualquer tecla ou clique pula. Completa na primeira vez do dia em cada aparelho (e ao trocar de tema ou pedir
-// para ver de novo).
+// app. A sala muda com a hora: de manhã e à tarde o sol entra pela janela, à noite o abajur acende, de madrugada só a
+// lua e a TV clareiam. Qualquer tecla ou clique pula. Completa na primeira vez do dia em cada aparelho (e ao trocar de
+// tema ou pedir para ver de novo).
 import { $, esc } from "./util.js";
 import { pixel } from "./pixel.js";
-import { diskSeek, lampClick, postBeep, startupChime, tvOn, warmTone } from "./sound.js";
+import { birds, diskSeek, lampClick, nightHum, postBeep, startupChime, tvOn, warmTone } from "./sound.js";
 
 const LINE_MS = 220;
 const STEP_MIN_MS = 420;     // cada item fica girando pelo menos isso, mesmo com o dado já guardado
 const STEP_LIMIT_MS = 15000; // informação que demora mais que isso aparece como "sem resposta" (a página segue)
 const MEMORY_MS = 1100;
 const SPLASH_MS = 3200;      // o tempo do acorde inteiro
-const DARK_MS = 600;     // a sala escura antes do clique do abajur
-const LAMP_MS = 1500;    // a luz enchendo a sala
+const DARK_MS = 600;     // a sala escura antes de clarear
+const LIGHT_MS = 1500;   // a luz (do abajur, do sol ou da lua) enchendo a sala
 const TV_MS = 1000;      // a TV acendendo e o nome aparecendo
 const CHIP_MIN_MS = 480;
 const HOLD_MS = 1800;
@@ -91,7 +92,12 @@ async function retro(el, steps, alive) {
   await sleep(SPLASH_MS + 300);
 }
 
-// ---------- moderno: a sala à noite, vista do sofá ----------
+// ---------- moderno: a sala vista do sofá, na hora do dia ----------
+const PERIODS = [[0, "madrugada"], [5, "manha"], [12, "tarde"], [18, "noite"]];
+export const periodOf = (hour) => PERIODS.filter(([from]) => hour >= from).pop()[1];
+// O som do que clareia a sala: o abajur à noite, os passarinhos de manhã, o acorde morno à tarde, o zumbido de madrugada
+const LIGHT_SOUND = { madrugada: nightHum, manha: birds, tarde: warmTone, noite: () => { lampClick(); warmTone(); } };
+
 // Um desenho só (1600×900, sempre em 16:9): as luzes são camadas por cima que só mudam de opacidade, e a entrada na TV
 // é um zoom do conjunto. As posições das camadas em % batem com as coordenadas do desenho.
 const ROOM = `<svg class="mb-svg" viewBox="0 0 1600 900" preserveAspectRatio="none" aria-hidden="true">
@@ -99,10 +105,29 @@ const ROOM = `<svg class="mb-svg" viewBox="0 0 1600 900" preserveAspectRatio="no
   <rect y="706" width="1600" height="14" fill="#2a2032"/>
   <rect y="720" width="1600" height="180" fill="#120d17"/>
   <rect x="1240" y="140" width="230" height="290" fill="#2a2032"/>
+  <defs>
+    <linearGradient id="mbSkyManha" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7ab4ee"/><stop offset="1" stop-color="#ffd9a3"/></linearGradient>
+    <linearGradient id="mbSkyTarde" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4b92e6"/><stop offset="1" stop-color="#b3d8f7"/></linearGradient>
+  </defs>
   <rect x="1252" y="152" width="206" height="266" fill="#0e1631"/>
-  <circle cx="1405" cy="205" r="18" fill="#e9e3d0"/><circle cx="1397" cy="199" r="16" fill="#0e1631"/>
-  <circle cx="1290" cy="190" r="2" fill="#c9c3e0"/><circle cx="1320" cy="250" r="1.5" fill="#c9c3e0"/>
-  <circle cx="1425" cy="330" r="2" fill="#c9c3e0"/><circle cx="1280" cy="360" r="1.5" fill="#c9c3e0"/>
+  <g class="mb-night-sky">
+    <circle cx="1405" cy="205" r="18" fill="#e9e3d0"/><circle cx="1397" cy="199" r="16" fill="#0e1631"/>
+    <circle cx="1290" cy="190" r="2" fill="#c9c3e0"/><circle cx="1320" cy="250" r="1.5" fill="#c9c3e0"/>
+    <circle cx="1425" cy="330" r="2" fill="#c9c3e0"/><circle cx="1280" cy="360" r="1.5" fill="#c9c3e0"/>
+  </g>
+  <g class="mb-late-stars" fill="#c9c3e0">
+    <circle cx="1270" cy="170" r="1.2"/><circle cx="1335" cy="185" r="1.5"/><circle cx="1440" cy="260" r="1.2"/>
+    <circle cx="1300" cy="300" r="1"/><circle cx="1380" cy="350" r="1.5"/><circle cx="1445" cy="395" r="1.2"/>
+  </g>
+  <g class="mb-morning-sky">
+    <rect x="1252" y="152" width="206" height="266" fill="url(#mbSkyManha)"/>
+    <circle cx="1300" cy="372" r="34" fill="#fff1c9" opacity="0.35"/><circle cx="1300" cy="372" r="24" fill="#fff4d6"/>
+  </g>
+  <g class="mb-afternoon-sky">
+    <rect x="1252" y="152" width="206" height="266" fill="url(#mbSkyTarde)"/>
+    <circle cx="1420" cy="196" r="30" fill="#fffbe6" opacity="0.35"/><circle cx="1420" cy="196" r="20" fill="#fffdf2"/>
+    <ellipse cx="1300" cy="252" rx="40" ry="12" fill="#eef5fb"/><ellipse cx="1328" cy="243" rx="26" ry="10" fill="#eef5fb"/>
+  </g>
   <rect x="1351" y="152" width="8" height="266" fill="#2a2032"/><rect x="1252" y="281" width="206" height="8" fill="#2a2032"/>
   <ellipse cx="260" cy="712" rx="56" ry="9" fill="#0b080e"/>
   <rect x="256" y="300" width="8" height="412" fill="#0b080e"/>
@@ -120,7 +145,7 @@ const ROOM = `<svg class="mb-svg" viewBox="0 0 1600 900" preserveAspectRatio="no
   <path d="M800 752V900" stroke="#150f1a" stroke-width="4"/>
   <path class="mb-rim" d="M150 806a70 70 0 0 1 70-70h1160a70 70 0 0 1 70 70" fill="none" stroke="#f5a524" stroke-width="3"/>
 </svg>
-<i class="mb-dark"></i><i class="mb-light"></i><i class="mb-cone"></i><i class="mb-shade"></i><i class="mb-tvglow"></i>`;
+<i class="mb-dark"></i><i class="mb-day"></i><i class="mb-beam"></i><i class="mb-light"></i><i class="mb-cone"></i><i class="mb-shade"></i><i class="mb-tvglow"></i>`;
 
 /** A câmera entra na TV: o conjunto cresce em volta do centro da tela até ela cobrir a janela. */
 function zoomIntoTv(el) {
@@ -138,14 +163,15 @@ async function modern(el, steps, alive) {
       <div class="mb-tv"><p class="mb-name">Sofá</p><ul class="mb-lines" aria-live="polite"></ul></div>
     </div></div>
     <p class="boot-skip">${SKIP}</p>`;
+  const period = periodOf(new Date().getHours());
+  el.classList.add(`mb-${period}`);
   const tv = el.querySelector(".mb-tv");
   tv.style.fontSize = `${tv.clientWidth * TV_TEXT}px`; // o texto acompanha o tamanho da TV (TV, Mac ou celular)
   await sleep(DARK_MS);
   if (!alive()) return;
-  lampClick();
-  warmTone();
-  el.classList.add("lamp-on");
-  await sleep(LAMP_MS);
+  LIGHT_SOUND[period]();
+  el.classList.add("lit");
+  await sleep(LIGHT_MS);
   if (!alive()) return;
   tvOn();
   el.classList.add("tv-on");
