@@ -137,10 +137,10 @@ body:not([data-view="home"]) .rail { padding: 4px 2px 30px; }
 .fav[aria-pressed="true"] { color: #ffd500; }
 
 /* O andamento do programa em bloquinhos, num trilho preto afundado */
-.ch-body .meter, .guide .meter, .osd-text .meter, .zap-row .meter {
+.ch-body .meter, .guide .meter, .osd-text .meter, .zap-row .meter, .ep .meter, .poster .meter {
   height: 7px; padding: 1px; border-radius: 0; background: #000; box-shadow: inset 0 0 0 1px #4a4c5c;
 }
-.ch-body .meter i, .guide .meter i, .osd-text .meter i, .zap-row .meter i {
+.ch-body .meter i, .guide .meter i, .osd-text .meter i, .zap-row .meter i, .ep .meter i, .poster .meter i {
   background: repeating-linear-gradient(90deg, var(--p-block) 0 5px, transparent 5px 7px);
 }
 
@@ -160,6 +160,64 @@ body:not([data-view="home"]) .rail { padding: 4px 2px 30px; }
 .guide time { font: 400 22px/1 var(--font-term); }
 .guide li.current time { color: var(--p-lcd); }
 kbd { padding: 2px 6px; border: 0; border-radius: 0; background: var(--w-face); color: var(--w-text); box-shadow: var(--bevel-out); font: 700 12px/1.3 var(--font-ui); }
+
+/* ---------- filmes e séries: a pasta em "Miniaturas" e a ficha da série ----------
+   As capas ficam como as miniaturas do Explorer: quadradas, de moldura fina; a marcada ganha moldura e nome em
+   azul-marinho, como os ícones da área de trabalho. O cabeçalho é o mesmo cinza da lista de canais e fica preso em
+   cima ao rolar. As temporadas são as abas cinza das janelas de propriedades, e os episódios andam como os canais. */
+.grid-page { padding: 0 0 48px; }
+.grid-head {
+  position: sticky; top: 0; z-index: 1; margin: 0 0 22px; padding: 6px 10px;
+  background: var(--w-face); color: var(--w-text); box-shadow: var(--bevel-out);
+}
+.grid-head h1 { font-size: 18px; letter-spacing: 0.01em; }
+.grid-head p { color: #333; }
+.posters { padding: 0 24px; }
+.poster { border-radius: 0; box-shadow: 0 0 0 1px #000, 0 0 0 2px var(--seam); }
+.poster::before { font: 400 2.2rem/1 var(--font-pixel); letter-spacing: 0; }
+.poster .meter { height: 8px; }
+.card:focus { outline: none; }
+.card:hover .poster, .card:focus .poster { box-shadow: 0 0 0 4px var(--w-navy), 0 0 0 5px #fff; }
+.card:focus .card-title { background: var(--w-navy); color: #fff; outline: 1px dotted #fff; }
+.save { width: 32px; height: 32px; border-radius: 0; background: var(--w-face); color: var(--w-text); box-shadow: var(--bevel-out); }
+.save:hover, .save:focus { background: var(--w-navy); color: #fff; outline: 1px dotted #fff; outline-offset: -4px; }
+.save[aria-pressed="true"], .save-btn[aria-pressed="true"] { color: var(--w-text); }
+.save[aria-pressed="true"] svg, .save-btn[aria-pressed="true"] svg { fill: #ffd500; stroke: #000; }
+.save[aria-pressed="true"]:hover, .save[aria-pressed="true"]:focus,
+.save-btn[aria-pressed="true"]:hover, .save-btn[aria-pressed="true"]:focus { color: #fff; }
+
+.show { padding: 24px 28px 56px; }
+.show-hero .poster { box-shadow: 0 0 0 1px #000, 6px 8px 0 rgb(0 0 0 / 0.45); }
+.show-info h1, .vod-title { letter-spacing: 0.01em; }
+.crumb { padding: 2px 4px; margin-left: -4px; color: var(--muted); }
+.crumb:hover, .crumb:focus { background: var(--w-navy); color: #fff; outline: 1px dotted #fff; }
+.seasons { gap: 0; margin-bottom: 0; padding: 0 2px; border-bottom: 0; }
+.seasons button {
+  margin: 4px 2px 0 0; padding: 7px 14px 6px; border: 0; background: var(--w-face); color: var(--w-text);
+  box-shadow: inset 1px 1px 0 var(--w-light), inset -1px 0 0 var(--w-dark), inset -2px 0 0 var(--w-shadow);
+  font-size: 15px; letter-spacing: 0.01em;
+}
+.seasons button[aria-current="true"] { margin-top: 0; padding-bottom: 10px; background: #d6d6d6; color: var(--w-text); }
+.seasons button:hover, .seasons button:focus { background: var(--w-navy); color: #fff; outline: 1px dotted #fff; outline-offset: -5px; }
+.seasons + .episodes { border-top: 2px solid var(--w-face); }
+.episodes { gap: 0; }
+.ep { padding: 9px 12px; border-radius: 0; }
+.ep-num { font: 400 28px/1 var(--font-term); letter-spacing: 0; }
+.ep[aria-current="true"] { background: var(--p-playing); box-shadow: none; }
+.ep[aria-current="true"] .ep-num { color: var(--p-lcd); }
+.ep:focus { background: var(--w-navy); color: #fff; outline: 1px dotted #fff; outline-offset: -4px; }
+.ep:focus .ep-num, .ep:focus .ep-state { color: #dfe6ff; }
+.ep[aria-current="true"]:focus .ep-num { color: var(--p-lcd); }
+/* Assistindo filme ou episódio: a barra de título e a de status ocupam altura, então o vídeo encolhe um pouco para o
+   título e os botões (Voltar, Próximo episódio) aparecerem embaixo dele sem rolar. A TV (sem aspect-ratio) usa a altura. */
+[data-stage="theater"] .screen { max-height: calc(100vh - 290px); }
+@supports not (aspect-ratio: 1 / 1) {
+  [data-stage="theater"] .screen { height: calc(100vh - 290px); }
+}
+@media (max-width: 860px) {
+  .posters { padding: 0 12px; }
+  .show { padding: 18px 16px 48px; }
+}
 
 /* Por cima do vídeo: o número em visor verde, a lista rápida com a seleção do Windows, e a pergunta numa caixa 98 */
 #osd { background: rgb(0 0 0 / 0.86); backdrop-filter: none; }
