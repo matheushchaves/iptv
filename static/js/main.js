@@ -16,6 +16,7 @@ import { icon, pixel, weatherLook } from "./pixel.js";
 import { isRetro, onThemeChange, otherThemeLabel, toggleTheme } from "./theme.js";
 import { toggleSound } from "./sound.js";
 import * as statusbar from "./statusbar.js";
+import * as upnext from "./upnext.js";
 import "./idle.js";
 
 const browseEl = $("#browse"), detailsEl = $("#details"), railEl = $("#rail"), searchEl = $("#q"), mainEl = $("#main");
@@ -698,6 +699,7 @@ function onClick(e) {
 
 function onKey(e) {
   if (e.metaKey || e.ctrlKey || e.altKey || $("#dlg").open) return;
+  if (upnext.isOpen() && upnext.key(e)) { e.preventDefault(); return; } // "Próximo episódio" responde antes de tudo
   const typing = isTyping(document.activeElement);
   if (e.key === "/" && !typing) { e.preventDefault(); searchEl.focus(); return; }
   if (e.key === "Escape" && state.theater) { leaveTheater(); return; }
@@ -765,6 +767,7 @@ function rememberProgress({ entry, t, d }) {
 }
 
 player.on("change", (p) => {
+  upnext.close();
   if (!p) setState({ theater: false });
   if (!p) setTimeout(reloadIfSafe, 0); // parou o vídeo: se tinha atualização esperando, é a hora
   if (p && p.kind === "live" && state.live[p.id]) lastChannel.set(state.pid, state.live[p.id].url, p.url);
@@ -826,13 +829,18 @@ onSharedError(() => player.flash("Não foi possível salvar no servidor"));
 // Leitura em segundo plano: se o servidor não responder, o resto da página também vai mostrar
 const syncQuietly = () => syncShared().catch(() => {});
 document.addEventListener("visibilitychange", () => { if (!document.hidden) syncQuietly(); });
+function playNext(show, next) {
+  playEpisode(show, next.episode.url);
+  player.flash("Próximo episódio");
+}
+
+// O fim do arquivo passa para o próximo; o aviso nos créditos faz o mesmo antes, se ninguém disser para ficar
 player.on("ended", (entry) => {
   if (entry.kind !== "episode") return;
   const next = nextAfter(entry.show, entry.url);
-  if (!next) return;
-  playEpisode(entry.show, next.episode.url);
-  player.flash("Próximo episódio");
+  if (next) playNext(entry.show, next);
 });
+upnext.init({ next: (entry) => nextAfter(entry.show, entry.url), play: (entry, next) => playNext(entry.show, next) });
 
 document.addEventListener("click", onClick);
 document.addEventListener("keydown", onKey);

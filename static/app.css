@@ -174,6 +174,22 @@ img { display: block; }
 #idle .idle-title { margin-bottom: 8px; color: var(--text); font: 800 var(--step-3)/1.05 var(--font-display); letter-spacing: -0.035em; }
 #idle b { color: var(--lamp); font-variant-numeric: tabular-nums; }
 
+/* Próximo episódio nos créditos: no canto de baixo, por cima do vídeo (também na tela cheia). A escolha marcada é
+   a do controle (← →), não o foco, que fica onde estava */
+#upnext {
+  position: absolute; right: 24px; bottom: 64px; z-index: 3; width: min(400px, calc(100% - 48px));
+  padding: 16px 18px 18px; background: rgb(18 12 24 / 0.92); border-radius: var(--r-l);
+  box-shadow: 0 0 0 1px var(--seam), 0 24px 60px -16px rgb(0 0 0 / 0.75);
+}
+#upnext p { margin: 0; }
+.up-title { font: 700 var(--step-1)/1.2 var(--font-display); letter-spacing: -0.01em; }
+.up-title b { color: var(--lamp); font-variant-numeric: tabular-nums; }
+#upnext .up-what { margin-top: 4px; }
+.up-what { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.up-actions { display: flex; margin-top: 14px; }
+.up-actions .btn + .btn { margin-left: 10px; }
+.up-actions .btn[aria-selected="true"] { outline: 2px solid var(--lamp); outline-offset: 2px; }
+
 /* Lista rápida da tela cheia: coluna à esquerda (o número do canal fica à direita) */
 #zapper {
   position: absolute; left: 20px; top: 50%; transform: translateY(-50%);

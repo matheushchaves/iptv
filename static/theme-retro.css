@@ -232,6 +232,11 @@ kbd { padding: 2px 6px; border: 0; border-radius: 0; background: var(--w-face); 
 #idle p { color: #333; }
 #idle .idle-title { color: var(--w-text); font: 600 26px/1.1 var(--font-pixel); letter-spacing: 0; }
 #idle b { color: var(--w-navy); }
+#upnext { background: var(--w-face); color: var(--w-text); border-radius: 0; box-shadow: var(--bevel-out), 6px 8px 0 rgb(0 0 0 / 0.35); }
+.up-title { font: 600 18px/1.2 var(--font-pixel); letter-spacing: 0.01em; }
+.up-title b { color: var(--w-navy); }
+.up-what { color: #333; }
+.up-actions .btn[aria-selected="true"] { background: var(--w-navy); color: #fff; outline: 1px dotted #fff; outline-offset: -5px; }
 
 /* O player pequeno no canto, navegando com algo tocando */
 [data-stage="mini"] #stage { border-radius: 0; box-shadow: 0 0 0 2px var(--w-face), 6px 8px 0 rgb(0 0 0 / 0.35); }
