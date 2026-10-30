@@ -314,6 +314,9 @@ form.add input:not([type="radio"]) { background: #fff; color: var(--w-text); bor
 .tray { font-size: 15px; box-shadow: var(--bevel-in); }
 .tray b { font: 400 24px/1 var(--font-term); }
 [data-stage="mini"] #stage { bottom: 60px; }
+/* A folga embaixo da lista (para rolar os últimos canais para fora do player pequeno) não serve na área de trabalho,
+   que não rola: só cortava a fileira de baixo das janelas com uma tarja escura. Lá o player flutua por cima. */
+body[data-view="home"][data-stage="mini"] #browse { padding-bottom: 0; }
 body:not([data-view="home"])[data-stage="mini"] #stage { bottom: 88px; } /* acima da barra de status */
 
 .start-menu { padding: 3px; background: var(--w-face); box-shadow: var(--bevel-out), 6px 6px 0 rgb(0 0 0 / 0.25); }
