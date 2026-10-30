@@ -52,8 +52,6 @@ body[data-view="home"] .topbar { display: none; }
 .source select { background: #fff; color: var(--w-text); border: 0; border-radius: 0; box-shadow: var(--bevel-in); }
 .source > * + * { margin-left: 8px; }
 
-/* O conteúdo escuro dentro da moldura cinza da janela */
-body:not([data-view="home"]) .shell { border-left: 4px solid var(--w-face); border-right: 4px solid var(--w-face); }
 
 /* Botões com relevo, também dentro do conteúdo escuro */
 .btn { border: 0; border-radius: 0; background: var(--w-face); color: var(--w-text); box-shadow: var(--bevel-out); font-weight: 700; }
@@ -73,6 +71,133 @@ body:not([data-view="home"]) .shell { border-left: 4px solid var(--w-face); bord
 #osd, #zapper { border-radius: 0; box-shadow: 0 0 0 2px var(--w-face), 6px 8px 0 rgb(0 0 0 / 0.35); }
 .group-head h2 { border-radius: 0; background: var(--w-face); color: var(--w-text); border: 0; box-shadow: var(--bevel-out); }
 .group-head small { color: #444; }
+
+/* ---------- o programa: a TV do PC dos anos 90 ----------
+   Moldura e painéis cinza com relevo; as categorias, os canais, o guia e o vídeo ficam afundados e escuros, como as
+   "peles" dos players da época (a sala continua no escuro). O marcado é a seleção azul-marinho do Windows, igual no
+   início; o canal tocando tem o número no visor verde, e o andamento do programa anda em bloquinhos, como a entrada.
+   Dentro da janela o ameixa do tema moderno vira um cinza-azulado neutro: as cores do app.css seguem as variáveis. */
+:root {
+  --p-lcd: #4dff7c;
+  --p-block: #5b8ad0;
+  --p-playing: #17281f;
+  --p-idle-pick: #2f3245; /* item escolhido numa lista sem o foco: o cinza da seleção inativa do Windows */
+}
+body:not([data-view="home"]) .shell, #stage {
+  --night: #0e0f15; --sofa: #1b1d28; --cushion: #2a2d3d; --seam: #3b3e50; --muted: #a2a3b4; --text: #e6e6ea;
+}
+body:not([data-view="home"]) .shell { padding: 4px 4px 2px; background: var(--w-face); grid-column-gap: 4px; }
+body:not([data-view="home"]) #main { background: var(--w-face); }
+[data-stage="dock"] #main { grid-gap: 4px; }
+body:not([data-view="home"]) .rail, body:not([data-view="home"]) #browse, #details, #stage {
+  border: 2px solid; border-color: var(--w-shadow) var(--w-light) var(--w-light) var(--w-shadow);
+}
+body:not([data-view="home"]) .rail, body:not([data-view="home"]) #browse, #details { background: var(--night); color: var(--text); }
+
+/* Categorias: a árvore de pastas do Explorer */
+body:not([data-view="home"]) .rail { padding: 4px 2px 30px; }
+.rail ul { gap: 0; }
+.rail a { gap: 0; padding: 5px 8px 5px 6px; border-radius: 0; color: var(--text); }
+.rail a::before {
+  content: ""; flex: none; align-self: center; width: 16px; height: 14px; margin-right: 8px;
+  background: no-repeat center / contain url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 14' shape-rendering='crispEdges'><path fill='%23000' d='M0 1h7v1h9v12H0z'/><path fill='%23f2c94c' d='M1 2h5v1h9v10H1z'/><path fill='%23fff3b0' d='M1 3h14v1H1z'/></svg>");
+}
+.rail a[href$="%40now"]::before {
+  background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 14' shape-rendering='crispEdges'><path fill='%23000' d='M0 0h16v11H0zM5 11h6v1H5zM3 12h10v2H3z'/><path fill='%23c3c3c3' d='M1 1h14v9H1z'/><path fill='%233a6ea5' d='M2 2h12v7H2z'/><path fill='%23a8c8ff' d='M3 3h3v1H3z'/></svg>");
+}
+.rail a[href$="%40movies"]::before, .rail a[href$="%40recent"]::before {
+  background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 14' shape-rendering='crispEdges'><path fill='%23000' d='M1 0h14v14H1z'/><path fill='%23d8d8d8' d='M2 1h2v2H2zM2 6h2v2H2zM2 11h2v2H2zM12 1h2v2h-2zM12 6h2v2h-2zM12 11h2v2h-2z'/><path fill='%23e8a33a' d='M5 2h6v10H5z'/></svg>");
+}
+.rail a[href$="%40fav"]::before, .rail a[href$="%40saved"]::before {
+  background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path fill='%23ffd500' stroke='%23000' stroke-linejoin='round' d='M8 1.2l2 4.3 4.6.6-3.4 3.1.9 4.6L8 11.5l-4.1 2.3.9-4.6L1.4 6.1 6 5.5z'/></svg>");
+}
+.rail a small { margin-left: 10px; color: var(--muted); opacity: 1; }
+.rail a:hover { background: var(--sofa); color: #fff; }
+.rail a[aria-current="true"] { background: var(--p-idle-pick); box-shadow: none; color: #fff; }
+.rail a:focus { background: var(--w-navy); color: #fff; outline: 1px dotted #fff; outline-offset: -3px; }
+.rail a:focus small { color: #dfe6ff; }
+.rail li.after-pinned { margin-top: 6px; padding-top: 6px; }
+
+/* Canais: o cabeçalho de coluna cinza e as linhas com a seleção do Windows */
+.list-head { padding: 6px 10px; background: var(--w-face); color: var(--w-text); box-shadow: var(--bevel-out); }
+.list-head h1 { font-size: 18px; }
+.list-head p { color: #333; }
+.channels { padding: 0 0 24px; }
+.group-head { padding: 12px 8px 6px; }
+.ch { padding: 7px 40px 7px 8px; border-radius: 0; }
+.ch-num { font: 400 26px/1 var(--font-term); letter-spacing: 0; }
+.ch-logo { border-radius: 0; }
+.ch[aria-current="true"] { background: var(--p-playing); }
+.ch[aria-current="true"] .ch-num { color: var(--p-lcd); }
+.ch:focus { background: var(--w-navy); color: #fff; outline: 1px dotted #fff; outline-offset: -4px; }
+.ch:focus .ch-num, .ch:focus .ch-now { color: #dfe6ff; }
+.ch[aria-current="true"]:focus .ch-num { color: var(--p-lcd); }
+.fav { border-radius: 0; }
+.fav:focus { background: var(--w-navy); color: #fff; outline: 1px dotted #fff; outline-offset: -3px; }
+.fav[aria-pressed="true"] { color: #ffd500; }
+
+/* O andamento do programa em bloquinhos, num trilho preto afundado */
+.ch-body .meter, .guide .meter, .osd-text .meter, .zap-row .meter {
+  height: 7px; padding: 1px; border-radius: 0; background: #000; box-shadow: inset 0 0 0 1px #4a4c5c;
+}
+.ch-body .meter i, .guide .meter i, .osd-text .meter i, .zap-row .meter i {
+  background: repeating-linear-gradient(90deg, var(--p-block) 0 5px, transparent 5px 7px);
+}
+
+/* O canal tocando: o número no visor verde, o guia como lista afundada */
+[data-stage="dock"] #details { padding: 14px 18px 30px; }
+#status { font: 400 26px/1.25 var(--font-term); color: #c8c8c8; }
+.on-air { font: 600 14px/1 var(--font-pixel); }
+.on-air::before { border-radius: 0; box-shadow: none; }
+.now-head h2 { font-size: 28px; }
+.now-num { padding: 5px 10px 1px; background: #000; color: var(--p-lcd); box-shadow: var(--bevel-in); font: 400 40px/0.8 var(--font-term); }
+.version { padding: 5px 12px; border: 0; border-radius: 0; background: var(--w-face); color: var(--w-text); box-shadow: var(--bevel-out); }
+.version[aria-pressed="true"] { background: #e4e4e4; color: var(--w-text); box-shadow: var(--bevel-in); }
+.version:hover, .version:focus { background: var(--w-navy); color: #fff; outline: 1px dotted #fff; outline-offset: -4px; }
+.guide { gap: 0; }
+.guide li { grid-template-columns: 58px 1fr; padding: 8px 10px; border-radius: 0; }
+.guide li.current { background: var(--p-playing); box-shadow: none; }
+.guide time { font: 400 22px/1 var(--font-term); }
+.guide li.current time { color: var(--p-lcd); }
+kbd { padding: 2px 6px; border: 0; border-radius: 0; background: var(--w-face); color: var(--w-text); box-shadow: var(--bevel-out); font: 700 12px/1.3 var(--font-ui); }
+
+/* Por cima do vídeo: o número em visor verde, a lista rápida com a seleção do Windows, e a pergunta numa caixa 98 */
+#osd { background: rgb(0 0 0 / 0.86); backdrop-filter: none; }
+.osd-num { font: 400 64px/0.8 var(--font-term); color: var(--p-lcd); letter-spacing: 0; }
+.osd-text b { font-size: 22px; }
+#zapper { background: rgb(0 0 0 / 0.88); }
+.zap-row[aria-selected="true"] button { background: var(--w-navy); color: #fff; box-shadow: none; outline: 1px dotted #fff; outline-offset: -4px; }
+.zap-row[aria-selected="true"] .zap-now { color: #dfe6ff; }
+.zap-num { font: 400 30px/1 var(--font-term); letter-spacing: 0; }
+.zap-row[aria-current="true"] .zap-num { color: var(--p-lcd); }
+#idle { background: var(--w-face); color: var(--w-text); border-radius: 0; box-shadow: var(--bevel-out), 8px 10px 0 rgb(0 0 0 / 0.35); }
+#idle p { color: #333; }
+#idle .idle-title { color: var(--w-text); font: 600 26px/1.1 var(--font-pixel); letter-spacing: 0; }
+#idle b { color: var(--w-navy); }
+
+/* O player pequeno no canto, navegando com algo tocando */
+[data-stage="mini"] #stage { border-radius: 0; box-shadow: 0 0 0 2px var(--w-face), 6px 8px 0 rgb(0 0 0 / 0.35); }
+.mini-bar { background: var(--w-face); color: var(--w-text); }
+.mini-title { font: 600 15px/1.2 var(--font-pixel); }
+.mini-title:hover { color: var(--w-navy); }
+#miniClose { border-radius: 0; color: var(--w-text); }
+#miniClose:hover, #miniClose:focus { background: var(--w-navy); color: #fff; }
+
+/* A barra de status: ajuda do que está marcado e o que está tocando, em painéis afundados */
+body:not([data-view="home"]) .statusbar { display: flex; }
+.statusbar { padding: 0 4px 3px; background: var(--w-face); color: var(--w-text); font: 400 14px/1.2 var(--font-ui); }
+.statusbar span {
+  padding: 3px 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  box-shadow: inset 1px 1px 0 var(--w-shadow), inset -1px -1px 0 var(--w-light);
+}
+.sb-help { flex: 1; min-width: 0; }
+.sb-playing { flex: 0 1 auto; max-width: 48%; margin-left: 3px; }
+@media (max-width: 860px) {
+  body:not([data-view="home"]) .statusbar { display: none; } /* no toque, a ajuda das teclas não serve */
+  body:not([data-view="home"]) .rail { padding: 4px; }
+  .rail li.after-pinned { margin: 0; padding: 0; }
+  [data-stage="dock"]:not([data-playing]) #details { display: none; } /* só teria a dica de teclas, que some no toque */
+}
 
 /* Listas: a janela do Windows 98 */
 dialog { padding: 3px; border: 0; border-radius: 0; background: var(--w-face); color: var(--w-text); box-shadow: var(--bevel-out), 8px 10px 0 rgb(0 0 0 / 0.3); }
@@ -189,6 +314,7 @@ form.add input:not([type="radio"]) { background: #fff; color: var(--w-text); bor
 .tray { font-size: 15px; box-shadow: var(--bevel-in); }
 .tray b { font: 400 24px/1 var(--font-term); }
 [data-stage="mini"] #stage { bottom: 60px; }
+body:not([data-view="home"])[data-stage="mini"] #stage { bottom: 88px; } /* acima da barra de status */
 
 .start-menu { padding: 3px; background: var(--w-face); box-shadow: var(--bevel-out), 6px 6px 0 rgb(0 0 0 / 0.25); }
 .start-band {

@@ -15,6 +15,7 @@ import { runBoot, shouldBoot } from "./boot.js";
 import { icon, pixel, weatherLook } from "./pixel.js";
 import { isRetro, onThemeChange, otherThemeLabel, toggleTheme } from "./theme.js";
 import { toggleSound } from "./sound.js";
+import * as statusbar from "./statusbar.js";
 import "./idle.js";
 
 const browseEl = $("#browse"), detailsEl = $("#details"), railEl = $("#rail"), searchEl = $("#q"), mainEl = $("#main");
@@ -130,6 +131,7 @@ function renderChrome() {
   $("#winTitle").textContent = `Sofá — ${VIEW_TITLE[state.view]}`;
   document.querySelectorAll(".theme-btn").forEach((b) => { b.textContent = otherThemeLabel(); });
   home.renderTaskbar({ desk, view: state.view });
+  statusbar.showHelp(document.activeElement, state.view);
 }
 
 // ---------- layout: onde o player fica ----------
@@ -166,6 +168,7 @@ function render() {
     });
   }
   renderDetails();
+  statusbar.showHelp(document.activeElement, state.view); // o que tinha o foco pode ter sumido com a troca de tela
 }
 
 function renderTabs() {
@@ -327,6 +330,7 @@ function markPlaying() {
   const p = player.nowPlaying();
   const row = p && p.kind === "live" ? browseEl.querySelector(`.ch[data-ch="${p.id}"]`) : null;
   if (row) row.setAttribute("aria-current", "true");
+  statusbar.showHelp(document.activeElement, state.view); // o canal marcado pode ter virado o que está tocando
 }
 
 /** url: a versão do canal que vai tocar; tried: as que já falharam nesta tentativa. */
@@ -579,6 +583,7 @@ function loadMovieInfos(entry) {
 
 function renderDetails() {
   const p = player.nowPlaying();
+  statusbar.showPlaying(p);
   if (!p) detailsEl.innerHTML = state.view === "live" ? live.hintHtml() : "";
   else if (p.kind === "live") {
     detailsEl.innerHTML = live.detailsHtml(p, favorites.hasAny(p.variants.map((v) => v.url)), infoFor);
@@ -831,6 +836,7 @@ player.on("ended", (entry) => {
 
 document.addEventListener("click", onClick);
 document.addEventListener("keydown", onKey);
+document.addEventListener("focusin", (e) => statusbar.showHelp(e.target, state.view));
 // A tela cheia tira o foco da lista; ao sair, ele volta para o canal que está passando
 document.addEventListener("fullscreenchange", () => {
   if (document.fullscreenElement) return;

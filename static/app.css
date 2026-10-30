@@ -36,10 +36,10 @@ body {
   color: var(--text);
   font: 400 var(--step-0)/1.5 var(--font-ui);
   display: grid;
-  /* barra de título (só no retrô), barra de cima, conteúdo e barra de tarefas: faixa escondida não ocupa lugar */
-  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  /* barra de título e de status (só no retrô), barra de cima, conteúdo e barra de tarefas: faixa escondida não ocupa lugar */
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto;
   grid-template-columns: minmax(0, 1fr); /* a faixa de manchetes não pode alargar a página */
-  grid-template-areas: "title" "top" "main" "task";
+  grid-template-areas: "title" "top" "main" "status" "task";
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
@@ -76,6 +76,7 @@ img { display: block; }
 .icon-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
 
 .titlebar { grid-area: title; display: none; }
+.statusbar { grid-area: status; display: none; }
 .taskbar { grid-area: task; }
 .shell { grid-area: main; }
 
@@ -453,7 +454,7 @@ form.add input:not([type="radio"]) { background: var(--night); border: 1px solid
 
 /* ---------- telas estreitas ---------- */
 @media (max-width: 860px) {
-  body { height: auto; min-height: 100vh; min-height: 100dvh; overflow: auto; grid-template-rows: auto auto auto auto; }
+  body { height: auto; min-height: 100vh; min-height: 100dvh; overflow: auto; grid-template-rows: auto auto auto auto auto; }
   .topbar { flex-wrap: wrap; gap: 10px 16px; padding: 10px 16px; }
   .tabs { order: 3; width: 100%; overflow-x: auto; }
   .tabs a[aria-current="page"]::after { bottom: 0; }
