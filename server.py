@@ -2,6 +2,7 @@
 """Servidor IPTV local: playlist M3U + EPG XMLTV + proxy HLS. Só stdlib."""
 import hashlib
 import ipaddress
+import itertools
 import json
 import re
 import socket
@@ -23,6 +24,7 @@ from urllib.parse import urlparse, parse_qs, quote, urljoin
 import catalog
 import desk
 import prefs
+import tslive
 import vodmatch
 import xtream
 
@@ -50,6 +52,7 @@ CACHE_DIR = ROOT / "cache"  # notas e sinopses do painel Xtream (sem usuário e 
 MAX_PREFS_BODY = 1024 * 1024  # um navegador antigo manda tudo o que tinha guardado de uma vez
 MAX_NAME = 80
 MAX_UPLOAD = 300 * 1024 * 1024
+BUSY_RETRY_S = 1.5  # painel com o canal anterior ainda aberto (409): espera isso e tenta o .ts direto de novo
 
 _epg_cache = {"at": 0, "data": None}
 STATIC_DIR = ROOT / "static"
@@ -467,6 +470,8 @@ class Handler(BaseHTTPRequestHandler):
         query = parse_qs(path.query)
         if path.path in ("/", "/index.html"):
             self.send(200, (ROOT / "index.html").read_bytes(), "text/html; charset=utf-8")
+        elif path.path == "/basico":  # o Sofá para navegador de TV antiga (ver static/js/basico.js)
+            self.send(200, (ROOT / "basico.html").read_bytes(), "text/html; charset=utf-8")
         elif path.path == "/api/playlists":
             self.send_json(200, [public_playlist(p) for p in load_playlists()])
         elif path.path == "/api/catalog":
@@ -489,6 +494,8 @@ class Handler(BaseHTTPRequestHandler):
             self.static(path.path.removeprefix("/static/"))
         elif path.path == "/proxy":
             self.proxy(query.get("u", [""])[0])
+        elif path.path.startswith(tslive.PATH_PREFIX):
+            self.live_ts(tslive.url_from_path(path.path))
         else:
             self.send(404, b"not found", "text/plain")
 
@@ -577,6 +584,74 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_header("Connection", "close")
             self.end_headers()
             self.relay(resp, url, chunked)
+
+    def live_ts(self, url):
+        """Canal ao vivo como um .ts contínuo, para o navegador de TV antiga que não toca HLS (ver tslive)."""
+        ts_url = tslive.xtream_ts(url)
+        direct = self.open_direct(ts_url) if ts_url else None
+        if direct:
+            started = time.time()
+            with direct:
+                self.start_ts()
+                try:
+                    self.relay(direct, url, False)
+                    how = "o painel fechou"
+                except (BrokenPipeError, ConnectionResetError):
+                    how = "a TV fechou"
+            return log(f"ao vivo: {where(url)} {how} depois de {(time.time() - started) / 60:.1f} min")
+
+        def get_text(u):
+            with fetch(u, timeout=10) as resp:
+                return resp.read().decode("utf-8", "replace"), resp.geturl()
+
+        ended = []
+        pieces = tslive.segments(url, get_text, time.sleep, ended.append)
+        try:
+            first = next(pieces)
+        except (OSError, tslive.Unsupported, StopIteration) as exc:
+            log(f"ao vivo: {where(url)} não abriu ({str(exc) or 'lista vazia'})")
+            return self.send(502, b"upstream error", "text/plain")
+        self.start_ts()
+        started, sent = time.time(), 0
+        try:
+            for piece in itertools.chain([first], pieces):
+                try:
+                    with fetch(piece, timeout=15) as resp:
+                        data = resp.read()
+                except OSError as exc:
+                    log(f"ao vivo: pedaço {where(piece)} falhou ({exc})")
+                    continue
+                self.wfile.write(data)
+                sent += len(data)
+        except (BrokenPipeError, ConnectionResetError):
+            ended.append("a TV fechou")  # trocou de canal ou saiu do player: normal
+        except (OSError, tslive.Unsupported) as exc:
+            ended.append(f"parou ({exc})")
+        log(f"ao vivo: {where(url)} {ended[0] if ended else 'acabou'} depois de "
+            f"{(time.time() - started) / 60:.1f} min ({sent / 1e6:.0f} MB)")
+
+    def open_direct(self, ts_url):
+        """O .ts contínuo do painel Xtream, ou None (aí o canal vem em pedaços). Em 31/10/2026 o painel respondeu
+        409 (Conflict) ao trocar de canal e entregou o mesmo .ts logo depois: a conta tem uma conexão só, e o
+        canal anterior ainda contava. Por isso o 409 ganha uma segunda tentativa."""
+        for attempt in (1, 2):
+            try:
+                return fetch(ts_url)
+            except urllib.error.HTTPError as exc:
+                if exc.code != 409 or attempt == 2:
+                    log(f"ao vivo: {where(ts_url)} não abriu ({exc}); juntando os pedaços")
+                    return None
+                time.sleep(BUSY_RETRY_S)
+            except OSError as exc:
+                log(f"ao vivo: {where(ts_url)} não abriu ({exc}); juntando os pedaços")
+                return None
+
+    def start_ts(self):
+        # Sem tamanho e sem chunked: o fim do fluxo é a conexão fechando, que a TV antiga entende
+        self.send_response(200)
+        self.send_header("Content-Type", "video/mp2t")
+        self.send_header("Cache-Control", "no-cache")
+        self.end_headers()
 
     def relay(self, resp, url, chunked):
         while True:

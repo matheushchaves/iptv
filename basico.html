@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Sofá</title>
+<link rel="stylesheet" href="/static/basico.css">
+<script src="/static/js/report.js"></script>
+</head>
+<body>
+<!-- Sofá básico: o Sofá para navegador de TV antiga (ver static/js/basico.js) -->
+<div class="bar" id="bar">
+  <a href="javascript:history.back()" class="back" id="back">&#9664; Voltar</a>
+  <span class="brand">Sofá</span>
+  <span class="crumb" id="crumb"></span>
+  <span class="clock" id="clock"></span>
+</div>
+<div class="main" id="main"><p class="note">Carregando...</p></div>
+<div class="player" id="player" hidden>
+  <video id="video"></video>
+  <div class="pmsg" id="pmsg" hidden></div>
+  <div class="pbar" id="pbar">
+    <div class="pinfo"><b id="ptitle"></b> <span id="psub"></span></div>
+    <div class="pbtns" id="pbtns"></div>
+  </div>
+</div>
+<script src="/static/js/basico.js"></script>
+</body>
+</html>

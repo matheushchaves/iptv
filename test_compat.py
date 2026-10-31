@@ -70,5 +70,39 @@ class ChromeCompatTest(unittest.TestCase):
             self.assertIn("@supports not (aspect-ratio", CSS)
 
 
+class OldTvCompatTest(unittest.TestCase):
+    """A Samsung de 2013 (Chrome 25) não roda o Sofá: vai para o básico, que só pode ter ES5 e CSS daquela época.
+    Uma linha nova no básico derruba o script inteiro nessa TV, sem nada na tela além do "Carregando"."""
+
+    ES5_FILES = [ROOT / "static" / "js" / "basico.js", ROOT / "static" / "js" / "report.js"]
+    NOT_ES5 = {
+        "=>": r"=>", "crase": r"`", "let/const": r"\b(let|const)\s", "class": r"\bclass\s+\w", "...": r"[(\[{,]\s*\.\.\.\w",
+        "fetch": r"\bfetch\(", "Promise": r"\bPromise\b", "closest": r"\.closest\(", "Object.assign": r"Object\.assign\(",
+        "Array.from": r"Array\.from\(", "includes": r"\.includes\(", "startsWith/endsWith": r"\.(starts|ends)With\(",
+        "find": r"\.find(Index)?\(", "forEach de NodeList": r"querySelectorAll\([^)]*\)\.forEach",
+    }
+    OLD_CSS = {"flex": r"display\s*:\s*(-webkit-)?(inline-)?flex", "grid": r"display\s*:\s*grid", "var()": r"var\(--",
+               "calc": r"calc\(", "gap": r"(?<![\w-])gap\s*:", "inset": r"(?<![\w-])inset\s*:"}
+
+    def test_basic_page_scripts_are_plain_es5(self):
+        for path in self.ES5_FILES:
+            code = re.sub(r"(^|\s)//.*$", "", path.read_text(), flags=re.M)  # os comentários citam o que não pode
+            for name, pattern in self.NOT_ES5.items():
+                with self.subTest(file=path.name, rule=name):
+                    self.assertIsNone(re.search(pattern, code), f"{name} em {path.name}")
+
+    def test_basic_page_css_is_from_chrome_25_times(self):
+        css = re.sub(r"/\*.*?\*/", "", (ROOT / "static" / "basico.css").read_text(), flags=re.S)
+        for name, pattern in self.OLD_CSS.items():
+            with self.subTest(rule=name):
+                self.assertIsNone(re.search(pattern, css), name)
+
+    def test_browser_without_modules_goes_to_the_basic_page_before_anything_loads(self):
+        html = (ROOT / "index.html").read_text()
+        redirect = html.index('location.replace("/basico")')
+        self.assertIn('"noModule" in document.createElement("script")', html[:redirect])
+        self.assertLess(redirect, html.index('<link rel="stylesheet"'))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sofá</title>
+<script>
+  // Navegador sem módulos (Chrome antes do 61, como o de uma Samsung de 2013) não roda o Sofá: vai para o básico
+  if (!("noModule" in document.createElement("script"))) location.replace("/basico");
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Pixelify+Sans:wght@400..700&family=VT323&display=swap" rel="stylesheet">
@@ -20,6 +24,7 @@
     document.getElementById(t === "modern" ? "themeModern" : "themeRetro").media = "all";
   })();
 </script>
+<script src="/static/js/report.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.15/hls.min.js" crossorigin="anonymous"></script>
 <script type="module" src="/static/js/main.js"></script>
 </head>

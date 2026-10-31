@@ -62,6 +62,8 @@ Favoritos, "Minha lista" e "Continuar assistindo" ficam guardados no computador 
 
 A TV testada é uma LG com webOS (2021, navegador baseado no Chrome 79). Outras TVs com navegador devem abrir a página, mas não foram testadas, e os botões do controle podem chegar diferentes.
 
+**TV antiga.** Uma TV com navegador antigo demais para o Sofá (testado numa Samsung de 2013, com Chrome 25) abre sozinha uma versão básica: ao vivo, filmes e séries em botões grandes, que funcionam com as setas ou com o ponteiro do controle. Essa TV não toca o formato dos canais ao vivo, então o computador converte cada canal para um que ela toca; a imagem leva de 5 a 20 segundos para aparecer. Ficam de fora o guia, os temas e o início com as notícias.
+
 ## Colocar a sua lista
 
 Clique em **Listas** (em cima, ou no menu Iniciar do tema retrô), dê um nome e escolha:
@@ -154,6 +156,8 @@ python3 -m unittest -q
 ```
 
 A TV LG de 2021 usa um navegador baseado no Chrome 79. Por isso o JavaScript não usa `?.` nem `??`, e o CSS evita `gap` em flex e `inset`.
+
+A versão básica (`basico.html`, `static/js/basico.js`, `static/basico.css`) é para navegador sem módulos, como o Chrome 25 de uma Samsung de 2013: só ES5 e CSS sem flex, grid ou variáveis (o `test_compat.py` confere). O ao vivo dela passa por `/aovivo/`, que junta os pedaços do HLS num `.ts` contínuo (`tslive.py`).
 
 Os dados do início vêm de serviços gratuitos que não pedem cadastro:
 

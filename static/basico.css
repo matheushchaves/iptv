@@ -1,0 +1,76 @@
+/* Sofá básico (ver static/js/basico.js): só CSS que o Chrome 25 entende. Sem flex, grid, variáveis, calc nem
+   gap; blocos lado a lado com inline-block. As cores são as do Sofá (app.css), escritas por extenso.
+   A tela útil dessa TV é 1280x647; as larguras abaixo somam 1200 (com 40 de margem de cada lado). */
+* { box-sizing: border-box; }
+html, body { margin: 0; background: #17121c; color: #f3ece4; }
+body { font: 22px/1.3 "Helvetica Neue", Helvetica, Arial, sans-serif; }
+body.watching { overflow: hidden; }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; margin: 0; cursor: pointer; text-align: left; }
+input { font: inherit; }
+
+/* O abajur aceso: onde o controle está. O ponteiro passando só acende a borda (os dois juntos confundiriam) */
+a:hover, button:hover { border-color: #f5a524; }
+a:focus, button:focus, input:focus {
+  outline: 0;
+  background-color: #f5a524;
+  border-color: #f5a524;
+  color: #2a1800;
+  box-shadow: 0 0 0 4px rgba(245, 165, 36, 0.3), 0 10px 30px rgba(245, 165, 36, 0.22);
+}
+input:focus { background-color: #f3ece4; }
+a:focus span, button:focus span, .row:focus .num { color: #2a1800; }
+.row:focus .sub, .tile:focus span, .group:focus .count { color: #5c3b06; }
+
+.bar { height: 76px; line-height: 76px; padding: 0 40px; background: #201927; border-bottom: 2px solid #3a2f45; white-space: nowrap; overflow: hidden; }
+.brand { font-size: 34px; font-weight: bold; color: #f5a524; margin-right: 22px; }
+.crumb { color: #a99cb5; font-size: 24px; }
+.clock { float: right; font-size: 30px; font-weight: bold; }
+.back { float: left; height: 50px; line-height: 46px; margin: 13px 24px 0 0; padding: 0 20px; border: 2px solid #3a2f45; border-radius: 10px; background: #2c2335; font-size: 20px; }
+body.home .back { display: none; }
+
+.main { padding: 28px 40px 60px; }
+.note { color: #a99cb5; max-width: 900px; margin: 6px 0 22px; }
+
+.tiles { margin-bottom: 8px; }
+.tile { display: inline-block; vertical-align: top; width: 378px; height: 176px; margin: 0 22px 22px 0; padding: 28px 30px; border: 2px solid #3a2f45; border-radius: 20px; background: #2c2335; }
+.tile b { display: block; font-size: 36px; margin-bottom: 16px; }
+.tile span { color: #a99cb5; }
+
+.group { display: inline-block; vertical-align: top; position: relative; width: 382px; height: 70px; line-height: 66px; margin: 0 14px 14px 0; padding: 0 80px 0 22px; border: 2px solid #3a2f45; border-radius: 12px; background: #201927; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.group .count { position: absolute; right: 20px; top: 0; color: #a99cb5; font-size: 18px; }
+.group.on { border-color: #f5a524; }
+
+.row { display: inline-block; vertical-align: top; position: relative; width: 584px; height: 86px; margin: 0 16px 14px 0; padding: 12px 18px 0 140px; border: 2px solid #3a2f45; border-radius: 12px; background: #201927; white-space: nowrap; overflow: hidden; }
+.row.ep { padding-left: 22px; }
+.row .logo { position: absolute; left: 14px; top: 14px; width: 104px; height: 54px; line-height: 54px; text-align: center; border-radius: 6px; background: #2c2335; }
+.row .logo img { max-width: 96px; max-height: 50px; vertical-align: middle; }
+.row .line { display: block; font-size: 24px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; }
+.row .num { color: #f5a524; margin-right: 12px; }
+.row .sub { display: block; margin-top: 6px; color: #a99cb5; font-size: 18px; overflow: hidden; text-overflow: ellipsis; }
+.row .fav { display: inline-block; width: 12px; height: 12px; margin-left: 10px; border-radius: 6px; background: #f5a524; vertical-align: middle; }
+
+.poster { display: inline-block; vertical-align: top; width: 182px; margin: 0 14px 18px 0; padding: 6px; border: 0; border-radius: 14px; background: transparent; }
+.poster .art { display: block; height: 252px; border-radius: 10px; background-color: #2c2335; background-position: center; background-size: cover; background-repeat: no-repeat; }
+.poster .title { display: block; height: 52px; padding: 8px 4px 0; font-size: 18px; line-height: 1.2; overflow: hidden; }
+
+.search { margin: 0 0 22px; }
+.search input { width: 600px; height: 62px; padding: 0 20px; border: 2px solid #3a2f45; border-radius: 12px; background: #201927; color: #f3ece4; vertical-align: top; }
+.btn { display: inline-block; height: 62px; line-height: 58px; margin: 0 14px 14px 0; padding: 0 26px; border: 2px solid #3a2f45; border-radius: 12px; background: #2c2335; vertical-align: top; }
+.btn.on { border-color: #f5a524; }
+.search .btn { margin-left: 12px; }
+.pager { margin-top: 8px; color: #a99cb5; }
+.pager span { display: inline-block; height: 62px; line-height: 62px; margin-right: 14px; }
+
+.show h1 { margin: 0 0 18px; font-size: 40px; }
+.seasons { margin-bottom: 8px; }
+
+.player { position: fixed; left: 0; top: 0; width: 100%; height: 100%; background: #000; z-index: 10; }
+.player video { position: absolute; left: 0; top: 0; width: 100%; height: 100%; background: #000; }
+.pmsg { position: absolute; left: 0; right: 0; top: 42%; padding: 0 100px; text-align: center; font-size: 28px; text-shadow: 0 2px 8px #000; }
+.pmsg.bad { color: #ffb4a8; }
+.pbar { position: absolute; left: 0; right: 0; bottom: 0; padding: 20px 40px 26px; background: rgba(23, 18, 28, 0.92); border-top: 2px solid #3a2f45; visibility: hidden; }
+.player.bar-on .pbar { visibility: visible; }
+.pinfo { margin-bottom: 14px; font-size: 26px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pinfo span { margin-left: 16px; color: #a99cb5; }
+.pbtn { display: inline-block; height: 58px; margin: 0 12px 0 0; padding: 0 22px; border: 2px solid #3a2f45; border-radius: 12px; background: #2c2335; font-size: 20px; }
