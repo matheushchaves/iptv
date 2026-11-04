@@ -2,8 +2,10 @@
 import io
 import os
 import plistlib
+import shutil
 import subprocess
 import sys
+import tempfile
 import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
@@ -184,6 +186,20 @@ class PlistTest(unittest.TestCase):
         plist = self.run_cli("app-plist", "/Apps/Sofá.app/Contents/MacOS/Sofa")
         self.assertEqual(plist["ProgramArguments"], ["/Apps/Sofá.app/Contents/MacOS/Sofa", "--barra"])
         self.assertEqual(plist["Label"], "local.sofa.barra")
+
+
+class InstallerGuardTest(unittest.TestCase):
+    def test_refuses_protected_folders(self):
+        for folder in ("Downloads", "Documents", "Desktop"):
+            with self.subTest(folder=folder), tempfile.TemporaryDirectory() as home:
+                project = Path(home) / folder / "iptv"
+                project.mkdir(parents=True)
+                shutil.copy(ROOT / "instalar-mac.sh", project)
+                done = subprocess.run(["sh", "instalar-mac.sh"], cwd=project, env={**os.environ, "HOME": home},
+                                      capture_output=True, text=True)
+                self.assertNotEqual(done.returncode, 0)
+                self.assertIn("mova a pasta", done.stdout + done.stderr)
+                self.assertFalse((Path(home) / "Library" / "LaunchAgents").exists())
 
 
 if __name__ == "__main__":

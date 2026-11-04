@@ -47,6 +47,35 @@ Deixe o terminal aberto enquanto estiverem assistindo. Para desligar, aperte `Ct
 
 Na primeira vez, o computador pode perguntar se o Python pode receber conexões. No Mac, clique em **Permitir**. No Windows, permita em **Redes privadas**. Sem isso, a TV e o celular não conseguem abrir a página.
 
+## Deixar sempre ligado no Mac
+
+Para o Sofá ligar sozinho, sem Terminal e sem você ir até o computador, rode isto uma vez dentro da pasta do projeto:
+
+```sh
+sh instalar-mac.sh
+```
+
+A pasta não pode ficar em Mesa, Documentos ou Downloads, porque o macOS não deixa programas em segundo plano lerem essas pastas. O instalador avisa se for o caso, e também se faltar o compilador da Apple. O macOS mostra um aviso de item em segundo plano adicionado: é o Sofá.
+
+Depois disso, um programinha chamado vigia sobe o Sofá quando você entra na sua conta, religa se ele cair e não deixa o Mac dormir enquanto estiver na tomada. A tela pode apagar normalmente. Para saber como está:
+
+| Onde | O que mostra |
+|---|---|
+| Ícone na barra do Mac | Verde: tudo certo. Amarelo: atenção. Vermelho: não conseguiu ligar. Sem cor: desligado. Um clique abre os detalhes, e o botão direito tem **Abrir janela** e **Sair**. |
+| App **Sofá**, em `~/Applications` | Os mesmos detalhes numa janela. |
+| Celular ou tablet | Abra `http://sofa.local:8010` (ou o IP do Mac, porta 8010). Dá para ver o estado e religar do sofá. **Desligar** só existe no próprio Mac: de longe, o Mac dormiria e você não conseguiria ligar de novo. |
+
+Sair do app pelo ícone não desliga o Sofá, e o ícone volta no próximo login.
+
+O que continua dependendo de você:
+
+- **Mac reiniciado:** com o FileVault ligado, o Sofá só volta depois que alguém digitar a senha no Mac.
+- **Mac dormindo ou desligado:** nada responde. A página de estado não abrir já é o sinal.
+- **Fora da tomada ou de tampa fechada:** o Mac dorme.
+- **Moveu a pasta ou trocou de Python:** rode `sh instalar-mac.sh` de novo. Até lá, o ícone fica vermelho.
+
+Para tirar tudo, rode `sh desinstalar-mac.sh`. Listas e favoritos ficam onde estão.
+
 ## Abrir em cada aparelho
 
 | Aparelho | O que fazer |
@@ -56,7 +85,13 @@ Na primeira vez, o computador pode perguntar se o Python pode receber conexões.
 | Celular ou tablet | Abra o mesmo endereço "na rede" no navegador. Dá para pôr na tela de início como se fosse um app (no iPhone: Compartilhar → Adicionar à Tela de Início). |
 | Outro computador da casa | O mesmo endereço "na rede". |
 
-O endereço "na rede" pode mudar quando o roteador reinicia. Para ele ficar fixo, reserve um IP para o computador nas configurações do roteador (procure por "reserva de DHCP" ou "IP fixo").
+O endereço "na rede" pode mudar quando o roteador reinicia, e a TV continua indo no antigo. Para ele ficar fixo:
+
+1. No Mac, abra **Ajustes do Sistema → Wi-Fi → Detalhes** da sua rede e deixe **Endereço Wi-Fi privado** como **Fixo**. Se ele estiver rotativo, a reserva do próximo passo não segura.
+2. No roteador, reserve um IP para o endereço que aparece nesse ajuste (procure por "reserva de DHCP" ou "IP fixo").
+3. Atualize o favorito na TV.
+
+Enquanto isso, com o Sofá instalado no Mac, o IP atual aparece no ícone e na página de estado. Nomes como `sofa.local` funcionam no tablet, mas não abriram na TV LG testada: na TV, use o IP.
 
 Favoritos, "Minha lista" e "Continuar assistindo" ficam guardados no computador que roda o Sofá, então aparecem iguais em todos os aparelhos. O tema e o som da entrada são de cada aparelho.
 
@@ -130,6 +165,7 @@ A entrada (a tela de abertura com os números do dia) aparece na primeira vez do
 
 ## Quando algo não funciona
 
+- **Comece pelo ícone na barra do Mac ou por `http://sofa.local:8010`.** Se você instalou com `instalar-mac.sh`, eles dizem o que houve e mostram o endereço certo. Se a página nem abrir, o Mac está dormindo, desligado ou fora da rede.
 - **A TV não abre a página.** Confira se a TV e o computador estão no mesmo Wi-Fi e se o computador deixou o Python receber conexões (veja "Instalar e ligar"). Teste o endereço no celular primeiro. Se o endereço mudou, olhe o terminal de novo.
 - **Um canal não toca.** O canal pode estar fora do ar. Se o canal tem outras versões, escolha outra na tela do canal. Canais em H.265 (HEVC) não tocam no navegador, por isso o Sofá esconde essas versões. Filmes em `.avi` também não tocam no navegador.
 - **O celular recebe recusa enquanto a TV toca.** Muitas contas Xtream só aceitam uma tela por vez. Pare o vídeo na TV.
@@ -137,7 +173,7 @@ A entrada (a tela de abertura com os números do dia) aparece na primeira vez do
 
 ## Para quem quer mexer no código
 
-Não tem build nem dependências. O servidor é Python puro, e a página é HTML, CSS e módulos JavaScript servidos como estão.
+Não tem build nem dependências. O servidor é Python puro, e a página é HTML, CSS e módulos JavaScript servidos como estão. A exceção é o app do Mac, que o `instalar-mac.sh` compila na hora. O jeito simples, e o único por enquanto no Windows e no Linux, continua sendo `python3 server.py`.
 
 | Arquivo | O que tem |
 |---|---|
@@ -148,6 +184,10 @@ Não tem build nem dependências. O servidor é Python puro, e a página é HTML
 | `desk.py` | os dados do início: tempo, mercado, foguetes e manchetes |
 | `prefs.py` | favoritos, "Minha lista" e "Continuar assistindo" |
 | `index.html`, `static/` | a página: `static/js/main.js` liga tudo; `theme-retro.css` e `theme-modern.css` são os temas |
+| `vigia.py` | mantém o `server.py` no ar e serve a página de estado (`vigia.html`) |
+| `vigia_state.py` | decide a cor e a mensagem, e o que do log pode aparecer na página |
+| `vigia_system.py` | o que depende do sistema: Mac acordado, nome na rede, início no login |
+| `mac/` | o app do Mac: ícone na barra e janela, que só mostram a página do vigia |
 
 Para rodar os testes:
 
