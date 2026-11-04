@@ -38,8 +38,6 @@ class DecideTest(unittest.TestCase):
 class PublicLineTest(unittest.TestCase):
     def test_keeps_what_the_owner_should_see(self):
         cases = {
-            "19:02:28 player 192.168.0.5: erro de script: x em a.js:1 | Mozilla/5.0":
-                "player 192.168.0.5: erro de script: x em a.js:1",
             "painel ex.com: get_live_streams respondeu 403": "painel ex.com: get_live_streams respondeu 403",
             "12:00:00 lista Didugy: não abriu (403)": "lista Didugy: não abriu (403)",
             "12:00:00 recusado: 8.8.8.8 está fora da rede de casa": "recusado: 8.8.8.8 está fora da rede de casa",
@@ -57,10 +55,18 @@ class PublicLineTest(unittest.TestCase):
     def test_cuts_urls_and_credentials(self):
         self.assertEqual(cut_urls("falhou http://p.com/get.php?username=u&password=s ok"), "falhou [link] ok")
         self.assertNotIn("segredo", cut_urls("username=eu&password=segredo"))
-        self.assertNotIn("p.com", public_line("12:00:00 player 1.2.3.4: erro em http://p.com/live/u/s/1.ts"))
+        self.assertNotIn("p.com", public_line("12:00:00 lista Minha: erro em http://p.com/live/u/s/1.ts"))
 
     def test_long_line_is_capped(self):
-        self.assertLessEqual(len(public_line("player 1.2.3.4: erro " + "x" * 500)), 160)
+        self.assertLessEqual(len(public_line("lista Minha: " + "x" * 500)), 160)
+
+    def test_player_lines_stay_out(self):
+        # Canal que falhou é rotina do player: no log real elas eram 43% das linhas e expulsavam o resto da página
+        for line in ("12:02:22 player 192.168.0.3: 84 CNN Brasil: networkError/fragLoadError (HTTP Error 0 )",
+                     "12:02:22 player 192.168.0.3: Globo News: FATAL networkError/manifestLoadError",
+                     "19:02:28 player 192.168.0.5: erro de script: Script error. em :0 | Mozilla/5.0"):
+            with self.subTest(line=line):
+                self.assertIsNone(public_line(line))
 
 
 class FailureReasonTest(unittest.TestCase):

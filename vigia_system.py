@@ -3,6 +3,7 @@
 Fora do Mac estas peças não fazem nada e não dão erro, então `python vigia.py` já roda à mão no Windows e no Linux.
 Para gerar o que o instalador registra: python3 vigia_system.py vigia-plist <python> | app-plist <binário>
 """
+import ipaddress
 import os
 import plistlib
 import socket
@@ -26,9 +27,10 @@ def lan_ip() -> Optional[str]:
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
         try:
             s.connect(("192.0.2.1", 80))
-            return s.getsockname()[0]
-        except OSError:
+            ip = ipaddress.ip_address(s.getsockname()[0])
+        except (OSError, ValueError):
             return None
+    return None if ip.is_loopback or ip.is_link_local or ip.is_unspecified else str(ip)  # nenhum serve para a TV
 
 
 def on_battery(run: Callable = subprocess.run) -> bool:

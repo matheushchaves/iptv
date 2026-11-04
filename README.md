@@ -165,7 +165,7 @@ A entrada (a tela de abertura com os números do dia) aparece na primeira vez do
 
 ## Quando algo não funciona
 
-- **Comece pelo ícone na barra do Mac ou por `http://sofa.local:8010`.** Se você instalou com `instalar-mac.sh`, eles dizem o que houve e mostram o endereço certo. Se a página nem abrir, o Mac está dormindo, desligado ou fora da rede.
+- **Comece pelo ícone na barra do Mac ou por `http://sofa.local:8010`.** Se você instalou com `instalar-mac.sh`, eles dizem o que houve e mostram o endereço certo. Se a página nem abrir, o Mac está dormindo, desligado ou fora da rede, ou a pasta do projeto mudou de lugar.
 - **A TV não abre a página.** Confira se a TV e o computador estão no mesmo Wi-Fi e se o computador deixou o Python receber conexões (veja "Instalar e ligar"). Teste o endereço no celular primeiro. Se o endereço mudou, olhe o terminal de novo.
 - **Um canal não toca.** O canal pode estar fora do ar. Se o canal tem outras versões, escolha outra na tela do canal. Canais em H.265 (HEVC) não tocam no navegador, por isso o Sofá esconde essas versões. Filmes em `.avi` também não tocam no navegador.
 - **O celular recebe recusa enquanto a TV toca.** Muitas contas Xtream só aceitam uma tela por vez. Pare o vídeo na TV.

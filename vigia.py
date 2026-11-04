@@ -41,6 +41,8 @@ READER_JOIN_S = 1
 MAX_EVENTS = 40
 BATTERY_EVERY_S = 30
 INTERNET_EVERY_S = 60
+FALLBACK_PAGE = """<!doctype html><meta charset="utf-8"><title>Sofá: vigia</title>
+<p>Não achei o vigia.html. Rode o instalar-mac.sh de novo.</p>""".encode()
 
 
 def probe_server(port: int, timeout: float = PROBE_TIMEOUT_S) -> bool:
@@ -66,8 +68,10 @@ class ServerLog:
         self.lock = threading.Lock()
 
     def _rotate(self) -> None:
-        self.file.close()
-        self.file = None
+        try:
+            self.file.close()  # com o disco cheio, falha ao gravar o que estava no buffer
+        finally:
+            self.file = None
         os.replace(self.path, self.path.with_suffix(".1.log"))  # server.log.1 escaparia do *.log do .gitignore
 
     def write(self, line: bytes) -> None:
@@ -83,8 +87,13 @@ class ServerLog:
 
     def close(self) -> None:
         with self.lock:
-            if self.file is not None:
+            if self.file is None:
+                return
+            try:
                 self.file.close()
+            except OSError as exc:
+                print(f"server.log não fechou direito ({exc})", flush=True)
+            finally:
                 self.file = None
 
 
@@ -135,10 +144,10 @@ class Supervisor:
     def _take(self, line: bytes) -> None:
         try:
             self.log.write(line)
-        except OSError as exc:
+        except Exception as exc:  # qualquer erro: a leitura vale mais que o log
             if not self.log_failed:
                 self.log_failed = True
-                self.emit(f"Não consegui gravar o server.log ({exc.strerror or exc})")
+                self.emit(f"Não consegui gravar o server.log ({getattr(exc, 'strerror', None) or exc})")
         text = line.decode("utf-8", "replace").rstrip()
         self.recent.append(text)
         shown = public_line(text)
@@ -389,7 +398,16 @@ class Vigia:
         self.names.stop()
 
 
+def load_page(path: Path) -> bytes:
+    try:
+        return path.read_bytes()
+    except OSError:
+        return FALLBACK_PAGE
+
+
 def make_handler(vigia: Vigia) -> type:
+    page = load_page(PAGE)  # lida uma vez: com o projeto movido, é ela que precisa dizer o que aconteceu
+
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *args):
             pass
@@ -416,7 +434,7 @@ def make_handler(vigia: Vigia) -> type:
                 return
             path = urlparse(self.path).path
             if path == "/":
-                self.send(200, PAGE.read_bytes(), "text/html; charset=utf-8")
+                self.send(200, page, "text/html; charset=utf-8")
             elif path == "/api/status":
                 self.send_json(200, vigia.status(is_loopback(self.client_address[0])))
             else:

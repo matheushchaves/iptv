@@ -347,6 +347,11 @@ class RealChildTest(unittest.TestCase):
             self.wait_until(lambda: "painel x: respondeu 403" in self.events)
             self.wait_until(lambda: self.facts().responding)
 
+    def test_unexpected_log_error_does_not_stop_the_reader(self):
+        self.rig("noise")
+        with mock.patch.object(ServerLog, "write", side_effect=ValueError("write to closed file")):
+            self.wait_until(lambda: "painel x: respondeu 403" in self.events)
+
 
 class ProbeTest(unittest.TestCase):
     def test_nothing_listening_is_not_the_sofa(self):
@@ -354,6 +359,34 @@ class ProbeTest(unittest.TestCase):
 
 
 class ServerLogTest(unittest.TestCase):
+    def full_disk(self, log):
+        """O arquivo aberto passa a falhar ao fechar, como quando o disco enche com dados no buffer."""
+        real = log.file
+        log.file = mock.Mock(wraps=real)
+        log.file.close.side_effect = OSError("disco cheio")
+        return real
+
+    def test_failed_rotation_does_not_break_later_writes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            log = ServerLog(Path(tmp) / "server.log", max_bytes=10)
+            log.write(b"primeira\n")
+            real = self.full_disk(log)
+            with self.assertRaises(OSError):
+                log.write(b"segunda\n")
+            real.close()
+            log.write(b"x\n")
+            log.close()
+            self.assertEqual((Path(tmp) / "server.log").read_bytes()[-2:], b"x\n")
+
+    def test_close_survives_a_full_disk(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            log = ServerLog(Path(tmp) / "server.log")
+            log.write(b"primeira\n")
+            real = self.full_disk(log)
+            log.close()
+            real.close()
+            self.assertIsNone(log.file)
+
     def test_rotates_past_the_limit(self):
         with tempfile.TemporaryDirectory() as tmp:
             log = ServerLog(Path(tmp) / "server.log", max_bytes=10)
@@ -470,6 +503,15 @@ class StatusApiTest(ApiCase):
         self.assertEqual(code, 200)
         self.assertIn("<title>", body.decode())
         self.assertEqual(self.status()["color"], "red")
+
+    def test_page_survives_the_project_moving(self):
+        with mock.patch.object(vigia, "PAGE", Path("/nao/existe")):
+            code, body = self.ask("GET", "/")
+        self.assertEqual(code, 200)
+        self.assertIn("Vigia fora do ar", body.decode())
+
+    def test_missing_page_has_a_fallback(self):
+        self.assertIn(b"instalar-mac.sh", vigia.load_page(Path("/nao/existe")))
 
     def test_unknown_path_is_404(self):
         self.assertEqual(self.ask("GET", "/nada")[0], 404)
@@ -621,6 +663,10 @@ class PageTest(unittest.TestCase):
 
     def test_has_the_no_network_message(self):
         self.assertIn("Sem rede no Mac", self.page)
+
+    def test_gives_up_on_a_slow_answer(self):
+        # Com o Mac dormindo o pedido fica pendurado, e a página seguiria verde sem isto
+        self.assertIn("AbortController", self.page)
 
     def test_tells_when_the_vigia_is_gone(self):
         self.assertIn("Vigia fora do ar", self.page)

@@ -138,6 +138,17 @@ class NetworkTest(unittest.TestCase):
             sock.return_value.__enter__.return_value.connect.side_effect = OSError("sem rede")
             self.assertIsNone(lan_ip())
 
+    def test_addresses_outside_the_lan_are_ignored(self):
+        for ip in ("127.0.0.1", "0.0.0.0", "169.254.13.123"):
+            with self.subTest(ip=ip), mock.patch("socket.socket") as sock:
+                sock.return_value.__enter__.return_value.getsockname.return_value = (ip, 5000)
+                self.assertIsNone(lan_ip())
+
+    def test_lan_address_is_returned(self):
+        with mock.patch("socket.socket") as sock:
+            sock.return_value.__enter__.return_value.getsockname.return_value = ("192.168.0.4", 5000)
+            self.assertEqual(lan_ip(), "192.168.0.4")
+
     def test_one_answer_is_enough_for_internet(self):
         hosts = []
 

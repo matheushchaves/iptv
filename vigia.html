@@ -110,6 +110,8 @@
 <script>
 (function () {
   var REFRESH_MS = 3000;
+  var REQUEST_MS = 5000;  // com o Mac dormindo o pedido fica pendurado, e a tela seguiria verde
+  var waiting = false;
   var byId = function (id) { return document.getElementById(id); };
 
   // Tudo aqui entra como texto: as linhas de "O que aconteceu" podem vir de qualquer aparelho da casa
@@ -201,13 +203,21 @@
   }
 
   function refresh() {
-    return fetch("/api/status", { cache: "no-store" })
+    if (waiting) return Promise.resolve();
+    waiting = true;
+    var request = new AbortController();
+    var timer = setTimeout(function () { request.abort(); }, REQUEST_MS);
+    return fetch("/api/status", { cache: "no-store", signal: request.signal })
       .then(function (res) {
         if (!res.ok) throw new Error(res.status);
         return res.json();
       })
       .then(render)
-      .catch(gone);
+      .catch(gone)
+      .then(function () {
+        clearTimeout(timer);
+        waiting = false;
+      });
   }
 
   function press(id, path) {
