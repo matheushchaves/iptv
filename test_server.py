@@ -507,6 +507,24 @@ class CatalogApiTest(unittest.TestCase):
         self.assertEqual(self.get("/static/js/nao-existe.js")[0], 404)
 
 
+class ListFailureLogTest(unittest.TestCase):
+    """Lista vencida não pode passar em silêncio: o vigia mostra essa linha na página de estado."""
+
+    def test_failed_list_is_logged_without_its_url(self):
+        url = "http://p.com/get.php?username=eu&password=segredo"
+        playlist = {"id": "falha", "name": "Minha", "url": url}
+        refused = urllib.error.HTTPError(url, 403, "Forbidden", None, None)
+        out = io.StringIO()
+        with mock.patch.object(server, "load_playlists", return_value=[playlist]), \
+             mock.patch.object(server, "load_epg", return_value=server.EMPTY_GUIDE), \
+             mock.patch.object(server, "read_playlist_source", side_effect=refused), \
+             redirect_stdout(out):
+            with self.assertRaises(urllib.error.HTTPError):
+                server.load_catalog("falha")
+        self.assertIn("lista Minha: não abriu (403)", out.getvalue())
+        self.assertNotIn("segredo", out.getvalue())
+
+
 class HomeNetworkTest(unittest.TestCase):
     def test_home_network_and_vpn_addresses_are_served(self):
         # 100.x é o Tailscale (VPN para assistir fora de casa)

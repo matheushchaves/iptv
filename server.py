@@ -347,8 +347,12 @@ def load_catalog(pid):
             return cached["data"]
         print(f"Carregando playlist {playlist['name']}...", flush=True)
         epg = load_epg()
-        cat = catalog.build_catalog(parse_m3u(read_playlist_source(playlist)),
-                                    epg_for=epg.for_channel)
+        try:
+            text = read_playlist_source(playlist)
+        except Exception as exc:  # o erro pode trazer o link da lista, que tem usuário e senha
+            log(f"lista {playlist['name']}: não abriu ({getattr(exc, 'code', type(exc).__name__)})")
+            raise
+        cat = catalog.build_catalog(parse_m3u(text), epg_for=epg.for_channel)
         panel = panel_for(playlist)
         if panel:
             cat = with_vod_info(cat, panel)
