@@ -3,19 +3,27 @@
 Roda separado do Sofá e nunca importa o server.py, para um erro lá não derrubar quem precisa avisar do erro.
 Rodar: python3 vigia.py [porta do Sofá] [porta da página]
 """
+import errno
 import http.client
+import ipaddress
 import json
 import os
+import signal
 import subprocess
 import sys
 import threading
 import time
 from collections import deque
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Callable, Optional, Sequence
+from urllib.parse import urlparse
 
-from vigia_state import Facts, failure_reason, public_line
+from vigia_state import Facts, Verdict, decide, failure_reason, public_line
+from vigia_system import KeepAwake, NamePublisher, internet_ok, lan_ip, on_battery
 
+ROOT = Path(__file__).parent.resolve()
+PAGE = ROOT / "vigia.html"
 SERVER_PORT = 8000
 STATUS_PORT = 8010
 TICK_S = 2
@@ -30,6 +38,9 @@ MAX_LOG_BYTES = 5 * 1024 * 1024
 MAX_LINE_BYTES = 4096
 RECENT_LINES = 20
 READER_JOIN_S = 1
+MAX_EVENTS = 40
+BATTERY_EVERY_S = 30
+INTERNET_EVERY_S = 60
 
 
 def probe_server(port: int, timeout: float = PROBE_TIMEOUT_S) -> bool:
@@ -250,3 +261,213 @@ class Supervisor:
             return Facts(stopped=self.stopped, own_child=self.child is not None, responding=self.responding,
                          crashed=self.crashed, gave_up=gave_up, reason=self.reason, on_battery=on_battery,
                          online=online)
+
+
+def from_home(addr: str) -> bool:
+    """Mesma regra do server.py, que o vigia não importa."""
+    try:
+        return not ipaddress.ip_address(addr).is_global
+    except ValueError:
+        return False
+
+
+def is_loopback(addr: str) -> bool:
+    try:
+        return ipaddress.ip_address(addr).is_loopback
+    except ValueError:
+        return False
+
+
+def trusted_host(name: str) -> bool:
+    """Endereços que a casa usa de verdade. Um nome qualquer aqui seria um site apontando seu DNS para o Mac."""
+    if name == "localhost" or name.endswith(".local"):
+        return True
+    try:
+        ipaddress.ip_address(name)
+        return True
+    except ValueError:
+        return False
+
+
+def same_site(host: str, origin: Optional[str]) -> bool:
+    """Uma página qualquer aberta num navegador da casa não pode apertar os botões do vigia."""
+    name = urlparse(f"//{host}").hostname or ""
+    return trusted_host(name) and (not origin or urlparse(origin).hostname == name)
+
+
+class Vigia:
+    """Junta o que aconteceu com o Sofá e o estado do Mac no que a página e o app mostram."""
+
+    def __init__(self, supervisor, awake, names, *, ip: Callable = lan_ip, battery: Callable = on_battery,
+                 online: Callable = internet_ok, status_port: int = STATUS_PORT, clock: Callable = time.monotonic,
+                 wall: Callable = time.time):
+        self.supervisor, self.awake, self.names = supervisor, awake, names
+        self.ip, self.battery, self.online, self.status_port = ip, battery, online, status_port
+        self.clock, self.wall = clock, wall
+        self.lock = threading.Lock()
+        self.events = deque(maxlen=MAX_EVENTS)
+        self.last_ip = self.title = None
+        self.since = wall()
+        self.on_battery, self.is_online = False, True
+        self.battery_due = self.internet_due = 0.0
+        self.done = threading.Event()
+        supervisor.emit = self.add_event
+
+    def add_event(self, text: str) -> None:
+        with self.lock:
+            self.events.append((self.wall(), text))
+
+    def _follow_ip(self) -> None:
+        ip = self.ip()
+        self.names.update(ip)
+        if ip and ip != self.last_ip:
+            if self.last_ip:
+                self.add_event(f"IP mudou para {ip}")
+            self.last_ip = ip
+
+    def _check_internet(self) -> None:
+        self.is_online = self.online()
+
+    def step(self) -> None:
+        self.supervisor.tick()
+        self.awake.set(not self.supervisor.stopped)
+        self._follow_ip()
+        now = self.clock()
+        if now >= self.battery_due:
+            self.battery_due = now + BATTERY_EVERY_S
+            self.on_battery = self.battery()
+        if now >= self.internet_due:
+            self.internet_due = now + INTERNET_EVERY_S
+            threading.Thread(target=self._check_internet, daemon=True).start()
+        self.status(True)  # sem ninguém olhando, o "desde" também precisa andar
+
+    def _note(self, verdict: Verdict) -> tuple:
+        with self.lock:
+            if verdict.title != self.title:
+                self.title, self.since = verdict.title, self.wall()
+            return self.since, [{"at": at, "text": text} for at, text in reversed(self.events)]
+
+    def _checks(self, facts: Facts) -> list:
+        service = "respondendo" if facts.responding else "desligado" if facts.stopped else "fora do ar"
+        return [
+            {"label": "Mac", "value": "na bateria" if facts.on_battery else "na tomada", "ok": not facts.on_battery},
+            {"label": "Serviço", "value": service, "ok": facts.responding},
+            {"label": "Internet", "value": "ok" if facts.online else "sem conexão", "ok": facts.online},
+        ]
+
+    def status(self, local: bool) -> dict:
+        facts = self.supervisor.facts(self.on_battery, self.is_online)
+        verdict = decide(facts)
+        since, events = self._note(verdict)
+        external = facts.responding and not facts.own_child
+        running = not facts.stopped and not external
+        return {
+            "color": verdict.color, "title": verdict.title, "detail": verdict.detail, "since": since,
+            "address": {"ip": self.ip(), "port": self.supervisor.port, "name": self.names.name,
+                        "status_port": self.status_port},
+            "checks": self._checks(facts),
+            "events": events,
+            "can_restart": running,
+            "can_start": facts.stopped and not external,
+            "can_stop": local and running,
+        }
+
+    def run(self, httpd: ThreadingHTTPServer) -> None:
+        threading.Thread(target=httpd.serve_forever, daemon=True).start()
+        try:
+            while True:
+                self.step()
+                if self.done.wait(TICK_S):
+                    return
+        finally:
+            httpd.shutdown()
+            self.shutdown()
+
+    def shutdown(self) -> None:
+        self.supervisor.shutdown()
+        self.awake.set(False)
+        self.names.stop()
+
+
+def make_handler(vigia: Vigia) -> type:
+    class Handler(BaseHTTPRequestHandler):
+        def log_message(self, *args):
+            pass
+
+        def send(self, code: int, body: bytes, ctype: str) -> None:
+            self.send_response(code)
+            self.send_header("Content-Type", ctype)
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            self.wfile.write(body)
+
+        def send_json(self, code: int, data: dict) -> None:
+            self.send(code, json.dumps(data, ensure_ascii=False).encode(), "application/json; charset=utf-8")
+
+        def at_home(self) -> bool:
+            if from_home(self.client_address[0]):
+                return True
+            self.send_json(403, {"error": "O vigia só atende a rede de casa"})
+            return False
+
+        def do_GET(self):
+            if not self.at_home():
+                return
+            path = urlparse(self.path).path
+            if path == "/":
+                self.send(200, PAGE.read_bytes(), "text/html; charset=utf-8")
+            elif path == "/api/status":
+                self.send_json(200, vigia.status(is_loopback(self.client_address[0])))
+            else:
+                self.send_json(404, {"error": "Não encontrado"})
+
+        def do_POST(self):
+            if not self.at_home():
+                return
+            if not same_site(self.headers.get("Host", ""), self.headers.get("Origin")):
+                return self.send_json(403, {"error": "Pedido de outro site recusado"})
+            path = urlparse(self.path).path
+            if path == "/api/restart":
+                done = vigia.supervisor.restart()
+                self.send_json(200, {"ok": True}) if done else self.send_json(409, {"error": "Religar não funciona agora"})
+            elif path == "/api/start":
+                vigia.supervisor.start()
+                self.send_json(200, {"ok": True})
+            elif path == "/api/stop":
+                # Do sofá isso não teria volta: o Mac dormiria e a página pararia de abrir
+                if not is_loopback(self.client_address[0]):
+                    return self.send_json(403, {"error": "Desligar só funciona no próprio Mac"})
+                vigia.supervisor.stop()
+                self.send_json(200, {"ok": True})
+            else:
+                self.send_json(404, {"error": "Não encontrado"})
+
+    return Handler
+
+
+def bind_status(vigia: Vigia, port: int, host: str = "0.0.0.0") -> ThreadingHTTPServer:
+    return ThreadingHTTPServer((host, port), make_handler(vigia))
+
+
+def main(argv: Sequence[str]) -> int:
+    port = int(argv[0]) if argv else SERVER_PORT
+    status_port = int(argv[1]) if len(argv) > 1 else STATUS_PORT
+    # Nada sobe antes da primeira volta: um segundo vigia para aqui, sem criar um segundo server.py
+    vigia = Vigia(Supervisor(ROOT, port), KeepAwake(), NamePublisher(port), status_port=status_port)
+    try:
+        httpd = bind_status(vigia, status_port)
+    except OSError as exc:
+        if exc.errno != errno.EADDRINUSE:
+            raise
+        print(f"O vigia já está rodando (porta {status_port} ocupada)", flush=True)
+        return 1
+    for sig in (signal.SIGTERM, signal.SIGINT):
+        signal.signal(sig, lambda *args: vigia.done.set())
+    print(f"Vigia rodando em http://localhost:{status_port}", flush=True)
+    vigia.run(httpd)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

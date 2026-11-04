@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sofá: vigia</title>
+<style>
+  /* Mesma sala do tema moderno. O vigia abre com o Sofá fora do ar, por isso nada aqui vem de /static. */
+  :root {
+    --night: #17121c; --sofa: #201927; --cushion: #2c2335; --seam: #3a2f45;
+    --text: #f3ece4; --muted: #a99cb5; --lamp: #f5a524; --lamp-ink: #2a1800;
+    --state: #a99cb5;
+  }
+  body[data-color="green"] { --state: #57d68d; }
+  body[data-color="yellow"] { --state: #f5a524; }
+  body[data-color="red"] { --state: #ff6b5e; }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { background: var(--night); }
+  body {
+    margin: 0; min-height: 100vh; color: var(--text);
+    font: 16px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: radial-gradient(120% 60% at 18% -8%, rgba(245, 165, 36, 0.13), rgba(245, 165, 36, 0) 70%), var(--night);
+  }
+  main { max-width: 420px; margin: 0 auto; padding: 22px 16px 20px; }
+
+  .state { display: flex; align-items: flex-start; }
+  .dot {
+    flex: none; width: 18px; height: 18px; margin: 7px 12px 0 0; border-radius: 50%;
+    background: var(--state); box-shadow: 0 0 16px var(--state);
+  }
+  body[data-color="yellow"] .dot, body[data-color="red"] .dot { animation: breathe 1.6s ease-in-out infinite; }
+  @keyframes breathe { 50% { opacity: 0.45; } }
+  @media (prefers-reduced-motion: reduce) { .dot { animation: none !important; } }
+
+  h1 { margin: 0; font-size: 25px; line-height: 1.2; font-weight: 700; }
+  #detail { margin: 6px 0 0; }
+  #since { margin: 3px 0 0; color: var(--muted); font-size: 14px; }
+
+  section { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--seam); }
+  h2 { margin: 0 0 6px; color: var(--muted); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; }
+  .addr { margin: 0; font: 700 23px/1.25 ui-monospace, Menlo, Consolas, monospace; overflow-wrap: anywhere; }
+  .addr.off { color: var(--muted); font-family: inherit; font-size: 18px; }
+  .small { margin: 3px 0 0; color: var(--muted); font-size: 14px; overflow-wrap: anywhere; }
+
+  ul, ol { margin: 0; padding: 0; list-style: none; }
+  #checks li { display: flex; justify-content: space-between; padding: 5px 0; }
+  #checks b { font-weight: 600; color: var(--muted); }
+  #checks b.ok { color: #57d68d; }
+  #events { max-height: 190px; overflow-y: auto; font-size: 14px; }
+  #events li { display: flex; padding: 3px 0; }
+  #events time { flex: none; width: 50px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  #events span { min-width: 0; overflow-wrap: anywhere; }
+  #empty { margin: 0; color: var(--muted); font-size: 14px; }
+
+  .actions { display: flex; flex-wrap: wrap; margin: 20px -4px 0; }
+  .btn {
+    flex: 1 1 130px; margin: 4px; padding: 11px 12px; border: 1px solid var(--seam); border-radius: 8px;
+    background: var(--cushion); color: var(--text); font-family: inherit; font-size: 15px; font-weight: 700; line-height: 1.2;
+    text-align: center; text-decoration: none; cursor: pointer; transition: border-color 120ms, opacity 120ms;
+  }
+  .btn.primary { background: var(--lamp); border-color: var(--lamp); color: var(--lamp-ink); }
+  .btn.quiet { flex-grow: 0; background: none; color: var(--muted); font-weight: 400; }
+  .btn:hover { border-color: var(--lamp); }
+  .btn:focus-visible { outline: 3px solid rgba(245, 165, 36, 0.55); outline-offset: 1px; }
+  .btn:active { opacity: 0.75; }
+  .btn:disabled { opacity: 0.5; cursor: default; }
+  #note { margin: 8px 0 0; color: #ff6b5e; font-size: 14px; }
+</style>
+</head>
+<body data-color="gray">
+<main>
+  <header class="state">
+    <span class="dot" aria-hidden="true"></span>
+    <div aria-live="polite">
+      <h1 id="title">Procurando o vigia</h1>
+      <p id="detail" hidden></p>
+      <p id="since" hidden></p>
+    </div>
+  </header>
+
+  <section aria-labelledby="tv-heading" id="address">
+    <h2 id="tv-heading">Endereço para a TV</h2>
+    <p class="addr" id="tv"></p>
+    <p class="small" id="tablet" hidden></p>
+    <p class="small" id="here" hidden></p>
+  </section>
+
+  <section aria-labelledby="checks-heading" id="health">
+    <h2 id="checks-heading">Como está</h2>
+    <ul id="checks"></ul>
+  </section>
+
+  <section aria-labelledby="events-heading" id="history">
+    <h2 id="events-heading">O que aconteceu</h2>
+    <ol id="events"></ol>
+    <p id="empty">Nada por enquanto.</p>
+  </section>
+
+  <div class="actions">
+    <a class="btn primary" id="open" target="_blank" rel="noopener" hidden>Abrir o Sofá</a>
+    <button class="btn" id="restart" type="button" hidden>Religar</button>
+    <button class="btn primary" id="start" type="button" hidden>Ligar</button>
+    <button class="btn quiet" id="stop" type="button" hidden>Desligar</button>
+  </div>
+  <p id="note" role="alert" hidden></p>
+</main>
+
+<script>
+(function () {
+  var REFRESH_MS = 3000;
+  var byId = function (id) { return document.getElementById(id); };
+
+  // Tudo aqui entra como texto: as linhas de "O que aconteceu" podem vir de qualquer aparelho da casa
+  function show(el, text) {
+    el.textContent = text || "";
+    el.hidden = !text;
+  }
+
+  function clear(el) {
+    while (el.firstChild) el.removeChild(el.firstChild);
+  }
+
+  function clock(epoch) {
+    var when = new Date(epoch * 1000);
+    var time = when.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    if (when.toDateString() === new Date().toDateString()) return time;
+    return when.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) + " " + time;
+  }
+
+  function renderAddress(address) {
+    var tv = byId("tv");
+    tv.textContent = address.ip ? address.ip + ":" + address.port : "Sem rede no Mac";
+    tv.className = address.ip ? "addr" : "addr off";
+    show(byId("tablet"), address.name ? "No tablet: " + address.name + ":" + address.port : "");
+    var page = address.name || address.ip;
+    show(byId("here"), page ? "Esta página: " + page + ":" + address.status_port : "");
+  }
+
+  function renderChecks(checks) {
+    var list = byId("checks");
+    clear(list);
+    checks.forEach(function (check) {
+      var row = document.createElement("li");
+      var label = document.createElement("span");
+      var value = document.createElement("b");
+      label.textContent = check.label;
+      value.textContent = check.value;
+      value.className = check.ok ? "ok" : "";
+      row.appendChild(label);
+      row.appendChild(value);
+      list.appendChild(row);
+    });
+  }
+
+  function renderEvents(events) {
+    var list = byId("events");
+    clear(list);
+    byId("empty").hidden = events.length > 0;
+    events.forEach(function (event) {
+      var row = document.createElement("li");
+      var time = document.createElement("time");
+      var text = document.createElement("span");
+      time.textContent = clock(event.at);
+      text.textContent = event.text;
+      row.appendChild(time);
+      row.appendChild(text);
+      list.appendChild(row);
+    });
+  }
+
+  function setSections(visible) {
+    ["address", "health", "history"].forEach(function (id) { byId(id).hidden = !visible; });
+  }
+
+  function render(status) {
+    document.body.setAttribute("data-color", status.color);
+    byId("title").textContent = status.title;
+    show(byId("detail"), status.detail);
+    show(byId("since"), "desde " + clock(status.since));
+    setSections(true);
+    renderAddress(status.address);
+    renderChecks(status.checks);
+    renderEvents(status.events);
+    var open = byId("open");
+    open.hidden = !status.checks[1].ok;
+    open.href = "http://" + location.hostname + ":" + status.address.port + "/";
+    byId("restart").hidden = !status.can_restart;
+    byId("start").hidden = !status.can_start;
+    byId("stop").hidden = !status.can_stop;
+  }
+
+  function gone() {
+    document.body.setAttribute("data-color", "red");
+    byId("title").textContent = "Vigia fora do ar";
+    show(byId("detail"), "O Mac pode estar dormindo ou desligado.");
+    show(byId("since"), "");
+    setSections(false);
+    ["open", "restart", "start", "stop"].forEach(function (id) { byId(id).hidden = true; });
+  }
+
+  function refresh() {
+    return fetch("/api/status", { cache: "no-store" })
+      .then(function (res) {
+        if (!res.ok) throw new Error(res.status);
+        return res.json();
+      })
+      .then(render)
+      .catch(gone);
+  }
+
+  function press(id, path) {
+    var button = byId(id);
+    button.addEventListener("click", function () {
+      button.disabled = true;
+      show(byId("note"), "");
+      fetch(path, { method: "POST" })
+        .then(function (res) {
+          return res.json().then(function (body) {
+            if (!res.ok) show(byId("note"), body.error);
+          });
+        })
+        .catch(function () { show(byId("note"), "O vigia não respondeu."); })
+        .then(refresh)
+        .then(function () { button.disabled = false; });
+    });
+  }
+
+  press("restart", "/api/restart");
+  press("start", "/api/start");
+  press("stop", "/api/stop");
+  refresh();
+  setInterval(refresh, REFRESH_MS);
+})();
+</script>
+</body>
+</html>
