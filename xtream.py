@@ -7,6 +7,7 @@ O arquivo guardado não tem usuário nem senha."""
 from __future__ import annotations
 
 import json
+import socket
 import threading
 import time
 import urllib.error
@@ -24,6 +25,18 @@ CALLS_PER_MINUTE = 4
 BLOCKED_PAUSE = 10 * 60
 MAX_PLOT = 400
 MAX_CAST = 160
+
+
+def failure_text(exc: Exception) -> str:
+    """Por que a rede falhou, em palavras. Nunca o texto do erro: ele pode trazer o link, que tem usuário e senha."""
+    if isinstance(exc, urllib.error.HTTPError):
+        return str(exc.code)
+    cause = exc.reason if isinstance(exc, urllib.error.URLError) else exc
+    if isinstance(cause, socket.gaierror):
+        return "nome não encontrado no DNS"
+    if isinstance(cause, socket.timeout):
+        return "sem resposta"
+    return type(exc).__name__
 
 
 @dataclass(frozen=True)
@@ -99,14 +112,15 @@ class Panel:
             return None
         self.calls.append(now)
         query = urlencode({"username": self.acct.username, "password": self.acct.password, **params})
+        what = f"painel {urlparse(self.acct.base).hostname}: {params.get('action', 'situação da conta')}"
         try:
             return self.fetch_json(f"{self.acct.base}/player_api.php?{query}")
         except urllib.error.HTTPError as exc:
             if exc.code in (401, 403, 429):
                 self.blocked_until = now + BLOCKED_PAUSE
-            print(f"painel {urlparse(self.acct.base).hostname}: {params.get('action')} respondeu {exc.code}", flush=True)
+            print(f"{what} respondeu {exc.code}", flush=True)
         except (OSError, ValueError) as exc:
-            print(f"painel {urlparse(self.acct.base).hostname}: {params.get('action')} falhou ({type(exc).__name__})", flush=True)
+            print(f"{what} falhou ({failure_text(exc)})", flush=True)
         return None
 
     def bulk(self) -> dict:

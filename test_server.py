@@ -3,6 +3,7 @@ import http.client
 import io
 import os
 import json
+import socket
 import tempfile
 import threading
 import unittest
@@ -458,6 +459,13 @@ class CatalogApiTest(unittest.TestCase):
             with urllib.request.urlopen(self.base + path, timeout=5) as resp:
                 self.assertEqual(resp.headers["Cache-Control"], "no-cache", path)
 
+    def test_list_the_dns_cannot_find_is_explained_on_screen(self):
+        no_dns = urllib.error.URLError(socket.gaierror(8, "nodename nor servname provided, or not known"))
+        with mock.patch.object(server, "read_playlist_source", side_effect=no_dns), redirect_stdout(io.StringIO()):
+            status, data = self.get_json("/api/live?playlist=x1")
+        self.assertEqual(status, 502)
+        self.assertEqual(data["error"], "Falha ao buscar: nome não encontrado no DNS")
+
     def test_live_lists_numbered_channels(self):
         _, data = self.get_json("/api/live?playlist=t1")
         self.assertEqual([(c["num"], c["name"]) for c in data], [(1, "Band")])
@@ -510,19 +518,27 @@ class CatalogApiTest(unittest.TestCase):
 class ListFailureLogTest(unittest.TestCase):
     """Lista vencida não pode passar em silêncio: o vigia mostra essa linha na página de estado."""
 
-    def test_failed_list_is_logged_without_its_url(self):
-        url = "http://p.com/get.php?username=eu&password=segredo"
-        playlist = {"id": "falha", "name": "Minha", "url": url}
-        refused = urllib.error.HTTPError(url, 403, "Forbidden", None, None)
+    URL = "http://p.com/get.php?username=eu&password=segredo"
+
+    def failed_log(self, error):
+        playlist = {"id": "falha", "name": "Minha", "url": self.URL}
         out = io.StringIO()
         with mock.patch.object(server, "load_playlists", return_value=[playlist]), \
              mock.patch.object(server, "load_epg", return_value=server.EMPTY_GUIDE), \
-             mock.patch.object(server, "read_playlist_source", side_effect=refused), \
+             mock.patch.object(server, "read_playlist_source", side_effect=error), \
              redirect_stdout(out):
-            with self.assertRaises(urllib.error.HTTPError):
+            with self.assertRaises(type(error)):
                 server.load_catalog("falha")
-        self.assertIn("lista Minha: não abriu (403)", out.getvalue())
-        self.assertNotIn("segredo", out.getvalue())
+        return out.getvalue()
+
+    def test_failed_list_is_logged_without_its_url(self):
+        log = self.failed_log(urllib.error.HTTPError(self.URL, 403, "Forbidden", None, None))
+        self.assertIn("lista Minha: não abriu (403)", log)
+        self.assertNotIn("segredo", log)
+
+    def test_list_the_dns_cannot_find_says_so(self):
+        log = self.failed_log(urllib.error.URLError(socket.gaierror(8, "nodename nor servname provided")))
+        self.assertIn("lista Minha: não abriu (nome não encontrado no DNS)", log)
 
 
 class HomeNetworkTest(unittest.TestCase):

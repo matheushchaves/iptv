@@ -1,8 +1,11 @@
 """Painel Xtream: notas e sinopses guardadas, sem passar do limite de consultas. Rodar: python3 -m unittest -v"""
+import io
 import json
+import socket
 import tempfile
 import unittest
 import urllib.error
+from contextlib import redirect_stdout
 from pathlib import Path
 from unittest import mock
 
@@ -51,6 +54,24 @@ class AccountTest(unittest.TestCase):
         self.assertIsNone(xtream.account({"file": "lista.m3u"}))
 
 
+class FailureTextTest(unittest.TestCase):
+    def test_says_why_in_plain_words(self):
+        cases = [
+            (urllib.error.URLError(socket.gaierror(8, "nodename nor servname provided")), "nome não encontrado no DNS"),
+            (urllib.error.URLError(socket.timeout("timed out")), "sem resposta"),
+            (socket.timeout("timed out"), "sem resposta"),
+            (urllib.error.HTTPError("http://p.com/x", 403, "Forbidden", None, None), "403"),
+        ]
+        for exc, text in cases:
+            with self.subTest(text=text):
+                self.assertEqual(xtream.failure_text(exc), text)
+
+    def test_anything_else_keeps_only_the_type(self):
+        # Nunca o texto do erro: ele pode trazer o link da lista, que tem usuário e senha
+        self.assertEqual(xtream.failure_text(urllib.error.URLError("http://p.com/?password=segredo")), "URLError")
+        self.assertEqual(xtream.failure_text(ValueError("http://p.com/?password=segredo")), "ValueError")
+
+
 class PanelTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -62,6 +83,23 @@ class PanelTest(unittest.TestCase):
 
     def panel(self, fake):
         return xtream.Panel(xtream.account(XTREAM), self.file, fake, clock=self.clock)
+
+    def test_failed_account_call_says_what_and_why(self):
+        def no_dns(url):
+            raise urllib.error.URLError(socket.gaierror(8, "nodename nor servname provided"))
+        out = io.StringIO()
+        with redirect_stdout(out):
+            self.assertIsNone(self.panel(no_dns).account_info())
+        self.assertEqual(out.getvalue().strip(),
+                         "painel painel.example: situação da conta falhou (nome não encontrado no DNS)")
+
+    def test_refused_account_call_says_what_it_was(self):
+        def refused(url):
+            raise urllib.error.HTTPError(url, 403, "Forbidden", None, None)
+        out = io.StringIO()
+        with redirect_stdout(out):
+            self.panel(refused).account_info()
+        self.assertEqual(out.getvalue().strip(), "painel painel.example: situação da conta respondeu 403")
 
     def test_whole_catalog_comes_once_a_day_and_survives_a_restart(self):
         fake = FakePanel()

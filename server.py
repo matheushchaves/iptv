@@ -350,7 +350,7 @@ def load_catalog(pid):
         try:
             text = read_playlist_source(playlist)
         except Exception as exc:  # o erro pode trazer o link da lista, que tem usuário e senha
-            log(f"lista {playlist['name']}: não abriu ({getattr(exc, 'code', type(exc).__name__)})")
+            log(f"lista {playlist['name']}: não abriu ({xtream.failure_text(exc)})")
             raise
         cat = catalog.build_catalog(parse_m3u(text), epg_for=epg.for_channel)
         panel = panel_for(playlist)
@@ -463,7 +463,7 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(400, {"error": str(exc)})
             except Exception as exc:
                 try:
-                    self.send_json(502, {"error": f"Falha ao buscar: {exc}"})
+                    self.send_json(502, {"error": f"Falha ao buscar: {xtream.failure_text(exc)}"})
                 except Exception:
                     pass
         return wrapper
