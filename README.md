@@ -43,7 +43,7 @@ O terminal mostra os endereços:
 IPTV rodando em http://localhost:8000 e, na rede, http://192.168.1.50:8000
 ```
 
-Deixe o terminal aberto enquanto estiverem assistindo. Para desligar, aperte `Ctrl+C`. Para usar outra porta: `python3 server.py 8080`.
+Deixe o terminal aberto enquanto estiverem assistindo. Para desligar, aperte `Ctrl+C`. Para usar outra porta: `python3 server.py 8080`. No Mac, dá para dispensar o terminal (veja a próxima seção). No Windows e no Linux, por enquanto, é assim mesmo.
 
 Na primeira vez, o computador pode perguntar se o Python pode receber conexões. No Mac, clique em **Permitir**. No Windows, permita em **Redes privadas**. Sem isso, a TV e o celular não conseguem abrir a página.
 
@@ -61,7 +61,7 @@ Depois disso, um programinha chamado vigia sobe o Sofá quando você entra na su
 
 | Onde | O que mostra |
 |---|---|
-| Ícone na barra do Mac | Verde: tudo certo. Amarelo: atenção. Vermelho: não conseguiu ligar. Sem cor: desligado. Um clique abre os detalhes, e o botão direito tem **Abrir janela** e **Sair**. |
+| Ícone na barra do Mac | Verde: tudo certo. Amarelo: atenção. Vermelho: não conseguiu ligar ou o vigia saiu do ar. Sem cor: desligado. Um clique abre os detalhes, e o botão direito tem **Abrir janela** e **Sair**. |
 | App **Sofá**, em `~/Applications` | Os mesmos detalhes numa janela. |
 | Celular ou tablet | Abra `http://sofa.local:8010` (ou o IP do Mac, porta 8010). Dá para ver o estado e religar do sofá. **Desligar** só existe no próprio Mac: de longe, o Mac dormiria e você não conseguiria ligar de novo. |
 
@@ -76,6 +76,12 @@ O que continua dependendo de você:
 
 Para tirar tudo, rode `sh desinstalar-mac.sh`. Listas e favoritos ficam onde estão.
 
+## Atualizar
+
+Com git, rode `git pull` dentro da pasta. Sem git, baixe o ZIP de novo e copie os arquivos por cima da pasta, sem apagar nada: suas listas e favoritos estão em `playlists.json`, `prefs.json` e `uploads/`, que não vêm no ZIP.
+
+Depois, ligue o Sofá de novo: `Ctrl+C` e `python3 server.py` ou, no Mac com o vigia, `sh instalar-mac.sh`. Isso interrompe o que estiver tocando.
+
 ## Abrir em cada aparelho
 
 | Aparelho | O que fazer |
@@ -85,7 +91,7 @@ Para tirar tudo, rode `sh desinstalar-mac.sh`. Listas e favoritos ficam onde est
 | Celular ou tablet | Abra o mesmo endereço "na rede" no navegador. Dá para pôr na tela de início como se fosse um app (no iPhone: Compartilhar → Adicionar à Tela de Início). |
 | Outro computador da casa | O mesmo endereço "na rede". |
 
-O endereço "na rede" pode mudar quando o roteador reinicia, e a TV continua indo no antigo. Para ele ficar fixo:
+O endereço "na rede" pode mudar sem aviso, por exemplo quando o roteador reinicia, e a TV continua indo no antigo. Para ele ficar fixo:
 
 1. No Mac, abra **Ajustes do Sistema → Wi-Fi → Detalhes** da sua rede e deixe **Endereço Wi-Fi privado** como **Fixo**. Se ele estiver rotativo, a reserva do próximo passo não segura.
 2. No roteador, reserve um IP para o endereço que aparece nesse ajuste (procure por "reserva de DHCP" ou "IP fixo").
@@ -159,16 +165,16 @@ A entrada (a tela de abertura com os números do dia) aparece na primeira vez do
 
 ## Segurança
 
-- **O Sofá só atende a rede de casa.** Pedidos que chegam da internet são recusados. Não abra a porta 8000 no roteador. Para assistir fora de casa, use uma VPN como o [Tailscale](https://tailscale.com), que o Sofá aceita.
-- **Não tem senha.** Qualquer pessoa no Wi-Fi da casa pode abrir o Sofá e mexer nas listas. Se você empresta o Wi-Fi para visitas, use uma rede de visitantes separada.
+- **O Sofá só atende a rede de casa.** Pedidos que chegam da internet são recusados. Não abra as portas 8000 e 8010 no roteador. Para assistir fora de casa, use uma VPN como o [Tailscale](https://tailscale.com), que o Sofá aceita.
+- **Não tem senha.** Qualquer pessoa no Wi-Fi da casa pode abrir o Sofá, mexer nas listas e religar o serviço pela página de estado. Se você empresta o Wi-Fi para visitas, use uma rede de visitantes separada.
 - **As senhas das listas não saem do computador.** O `playlists.json`, a pasta `uploads/` e o `prefs.json` estão no `.gitignore` e nunca vão para o GitHub.
 
 ## Quando algo não funciona
 
 - **Comece pelo ícone na barra do Mac ou por `http://sofa.local:8010`.** Se você instalou com `instalar-mac.sh`, eles dizem o que houve e mostram o endereço certo. Se a página nem abrir, o Mac está dormindo, desligado ou fora da rede, ou a pasta do projeto mudou de lugar.
-- **A TV não abre a página.** Confira se a TV e o computador estão no mesmo Wi-Fi e se o computador deixou o Python receber conexões (veja "Instalar e ligar"). Teste o endereço no celular primeiro. Se o endereço mudou, olhe o terminal de novo.
+- **A TV não abre a página.** Confira se a TV e o computador estão no mesmo Wi-Fi e se o computador deixou o Python receber conexões (veja "Instalar e ligar"). Teste o endereço no celular primeiro. Se a página abria e parou de abrir, o endereço pode ter mudado: veja o atual no ícone, em `http://sofa.local:8010` ou no terminal, e atualize o favorito.
 - **Um canal não toca.** O canal pode estar fora do ar. Se o canal tem outras versões, escolha outra na tela do canal. Canais em H.265 (HEVC) não tocam no navegador, por isso o Sofá esconde essas versões. Filmes em `.avi` também não tocam no navegador.
-- **Uma lista diz "nome não encontrado no DNS".** A lista existe, mas o DNS da sua internet não acha o endereço dela, e os canais dessa lista também não tocam. No computador do Sofá, abra Ajustes do Sistema > Wi-Fi > Detalhes > DNS e acrescente `1.1.1.1` e `8.8.8.8`. A TV não precisa mudar, porque o vídeo passa pelo computador.
+- **Uma lista diz "nome não encontrado no DNS".** A lista existe, mas o DNS da sua internet não acha o endereço dela, e os canais dessa lista também não tocam. No Mac, abra Ajustes do Sistema → Wi-Fi → Detalhes → DNS e acrescente `1.1.1.1` e `8.8.8.8`. No Windows e no Linux, procure o DNS nos ajustes de rede. Isso vale para toda a internet desse computador, e para desfazer basta apagar os dois. A TV não precisa mudar, porque o vídeo passa pelo computador. Lista salva em arquivo não mostra esse aviso: os canais dela só deixam de tocar, e a solução é a mesma.
 - **O celular recebe recusa enquanto a TV toca.** Muitas contas Xtream só aceitam uma tela por vez. Pare o vídeo na TV.
 - **A página parece desatualizada.** Quando o código do Sofá muda ou o servidor reinicia, a página se atualiza sozinha quando nada está tocando e ela está no Início. Se ficou presa numa versão muito antiga, recarregue a página uma vez.
 
@@ -189,6 +195,7 @@ Não tem build nem dependências. O servidor é Python puro, e a página é HTML
 | `vigia_state.py` | decide a cor e a mensagem, e o que do log pode aparecer na página |
 | `vigia_system.py` | o que depende do sistema: Mac acordado, nome na rede, início no login |
 | `mac/` | o app do Mac: ícone na barra e janela, que só mostram a página do vigia |
+| `instalar-mac.sh`, `desinstalar-mac.sh` | registram e tiram o vigia e o app do login do Mac |
 
 Para rodar os testes:
 
