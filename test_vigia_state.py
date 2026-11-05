@@ -39,7 +39,7 @@ class PublicLineTest(unittest.TestCase):
     def test_keeps_what_the_owner_should_see(self):
         cases = {
             "painel ex.com: get_live_streams respondeu 403": "painel ex.com: get_live_streams respondeu 403",
-            "12:00:00 lista Didugy: não abriu (403)": "lista Didugy: não abriu (403)",
+            "12:00:00 lista Minha: não abriu (403)": "lista Minha: não abriu (403)",
             "12:00:00 recusado: 8.8.8.8 está fora da rede de casa": "recusado: 8.8.8.8 está fora da rede de casa",
         }
         for line, shown in cases.items():

@@ -109,7 +109,7 @@ class PublicLineTest(unittest.TestCase):
         cases = {
             "19:02:28 player 192.168.0.5: erro de script: x em a.js:1 | Mozilla/5.0": "player 192.168.0.5: erro de script: x em a.js:1",
             "painel ex.com: get_live_streams respondeu 403": "painel ex.com: get_live_streams respondeu 403",
-            "12:00:00 lista Didugy: não abriu (403)": "lista Didugy: não abriu (403)",
+            "12:00:00 lista Minha: não abriu (403)": "lista Minha: não abriu (403)",
             "12:00:00 recusado: 8.8.8.8 está fora da rede de casa": "recusado: 8.8.8.8 está fora da rede de casa",
         }
         for line, shown in cases.items():
