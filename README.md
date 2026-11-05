@@ -2,9 +2,14 @@
 
 Um player de listas IPTV para a sua casa. Ele roda num computador que fica ligado e abre no navegador da TV, do próprio computador e do celular, todos no mesmo Wi-Fi. Foi feito para o controle remoto e testado numa TV LG com webOS, mas também funciona com mouse, teclado e toque.
 
-![O início no tema retrô: bem-vindo, tempo, mercado e o próximo lançamento de foguete](docs/inicio-retro.png)
+![A TV ao vivo no tema moderno: categorias, o que está passando em cada canal, o vídeo e a programação](docs/ao-vivo-moderno.webp)
 
-![A TV ao vivo no tema moderno: categorias, canais numerados e o player](docs/ao-vivo-moderno.png)
+<p>
+  <img src="docs/inicio-retro.webp" width="49%" alt="O início no tema retrô: bem-vindo, tempo, mercado e o próximo lançamento de foguete">
+  <img src="docs/ao-vivo-retro.webp" width="49%" alt="A TV ao vivo no tema retrô, com janelas e barra de tarefas">
+</p>
+
+Prints feitos com a lista de canais abertos que já vem no Sofá.
 
 ## O que ele faz
 
@@ -65,6 +70,8 @@ Depois disso, um programinha chamado vigia sobe o Sofá quando você entra na su
 | App **Sofá**, em `~/Applications` | Os mesmos detalhes numa janela. |
 | Celular ou tablet | Abra `http://sofa.local:8010` (ou o IP do Mac, porta 8010). Dá para ver o estado e religar do sofá. **Desligar** só existe no próprio Mac: de longe, o Mac dormiria e você não conseguiria ligar de novo. |
 
+<img src="docs/estado.webp" width="320" alt="A página de estado no celular: Sofá no ar, o endereço para a TV, como está o Mac e o botão Religar">
+
 Sair do app pelo ícone não desliga o Sofá, e o ícone volta no próximo login.
 
 O que continua dependendo de você:
@@ -90,6 +97,8 @@ Depois, ligue o Sofá de novo: `Ctrl+C` e `python3 server.py` ou, no Mac com o v
 | TV | Abra o navegador da TV (na LG, o app **Navegador da Web**) e digite o endereço "na rede", por exemplo `http://192.168.1.50:8000`. Salve nos favoritos para não digitar de novo. Na TV, o Sofá já abre tocando o último canal. |
 | Celular ou tablet | Abra o mesmo endereço "na rede" no navegador. Dá para pôr na tela de início como se fosse um app (no iPhone: Compartilhar → Adicionar à Tela de Início). |
 | Outro computador da casa | O mesmo endereço "na rede". |
+
+<img src="docs/celular.webp" width="280" alt="O início do Sofá no celular, no tema moderno">
 
 O endereço "na rede" pode mudar sem aviso, por exemplo quando o roteador reinicia, e a TV continua indo no antigo. Para ele ficar fixo:
 
