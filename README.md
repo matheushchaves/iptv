@@ -5,8 +5,8 @@ Um player de listas IPTV para a sua casa. Ele roda num computador que fica ligad
 ![A TV ao vivo no tema moderno: categorias, o que está passando em cada canal, o vídeo e a programação](docs/ao-vivo-moderno.webp)
 
 <p>
-  <img src="docs/inicio-retro.webp" width="49%" alt="O início no tema retrô: bem-vindo, tempo, mercado e o próximo lançamento de foguete">
-  <img src="docs/ao-vivo-retro.webp" width="49%" alt="A TV ao vivo no tema retrô, com janelas e barra de tarefas">
+  <img src="docs/inicio-moderno.webp" width="49%" alt="O início no tema moderno: bem-vindo, tempo, mercado e o próximo lançamento de foguete">
+  <img src="docs/inicio-retro.webp" width="49%" alt="O mesmo início no tema retrô, com janelas e barra de tarefas">
 </p>
 
 Prints feitos com a lista de canais abertos que já vem no Sofá.
@@ -169,6 +169,8 @@ No celular, é só tocar.
 ## Temas e entrada
 
 Troque o tema pelo botão **Tema retrô / Tema moderno**, em cima, ou pelo menu Iniciar do tema retrô. Cada aparelho guarda o seu.
+
+![A TV ao vivo no tema retrô: pastas de categorias, canais numerados, o vídeo e a programação](docs/ao-vivo-retro.webp)
 
 A entrada (a tela de abertura com os números do dia) aparece na primeira vez do dia em cada aparelho. Qualquer tecla ou toque pula. O som da entrada liga e desliga no menu Iniciar do tema retrô. O navegador pode não deixar tocar som antes de você apertar alguma coisa: nesse caso a entrada fica muda, e "Reiniciar o Sofá", no menu Iniciar, toca normalmente.
 
