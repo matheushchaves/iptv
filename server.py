@@ -681,8 +681,14 @@ def lan_ip():
             return "127.0.0.1"
 
 
+class SofaServer(ThreadingHTTPServer):
+    # A página pede todos os arquivos de uma vez, cada um na sua conexão: com a fila padrão (5), o que passa dela leva
+    # reset, e basta um módulo faltar para o app não abrir
+    request_queue_size = 128
+
+
 if __name__ == "__main__":
     PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8000
     threading.Thread(target=load_epg, daemon=True).start()
     print(f"IPTV rodando em http://localhost:{PORT} e, na rede, http://{lan_ip()}:{PORT}", flush=True)
-    ThreadingHTTPServer((HOST, PORT), Handler).serve_forever()
+    SofaServer((HOST, PORT), Handler).serve_forever()

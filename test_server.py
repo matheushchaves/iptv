@@ -541,6 +541,27 @@ class ListFailureLogTest(unittest.TestCase):
         self.assertIn("lista Minha: não abriu (nome não encontrado no DNS)", log)
 
 
+class PageLoadBurstTest(unittest.TestCase):
+    """A página pede todos os arquivos de uma vez, cada um numa conexão; basta um módulo cair para o app não abrir."""
+
+    def test_every_connection_of_a_whole_page_reaches_the_server(self):
+        app = server.SofaServer(("127.0.0.1", 0), server.Handler)  # sem serve_forever: a fila só esvazia no fim do teste
+        self.addCleanup(app.server_close)
+        app.socket.settimeout(0.2)
+        page_files = sum(f.is_file() for f in server.STATIC_DIR.rglob("*"))
+        for _ in range(page_files):  # no Mac, quem passa da fila conecta do mesmo jeito e só depois leva reset
+            self.addCleanup(socket.create_connection(app.server_address, timeout=1).close)
+        reached = 0
+        try:
+            while reached < page_files:
+                conn, _ = app.socket.accept()
+                self.addCleanup(conn.close)
+                reached += 1
+        except TimeoutError:
+            pass
+        self.assertEqual(reached, page_files)
+
+
 class HomeNetworkTest(unittest.TestCase):
     def test_home_network_and_vpn_addresses_are_served(self):
         # 100.x é o Tailscale (VPN para assistir fora de casa)
