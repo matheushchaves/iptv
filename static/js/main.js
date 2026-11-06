@@ -25,6 +25,7 @@ const SLUG_BY_VIEW = { home: "inicio", live: "ao-vivo", movie: "filmes", series:
 const PLACEHOLDER = { home: "Buscar canal", live: "Buscar canal", movie: "Buscar filme", series: "Buscar série", show: "Buscar série" };
 const DESK_REFRESH_MS = 5 * 60_000;
 const ALL_LABEL = { live: "Todos os canais", movie: "Todos os filmes", series: "Todas as séries" };
+const LIST_LOADING = "Carregando a lista… Na primeira vez pode levar alguns segundos.";
 const TUNE_MS = 1300;
 // CH± em sequência: só o canal em que você parar é carregado (cada carga cria um player de vídeo novo na TV)
 const ZAP_SETTLE_MS = 500;
@@ -53,6 +54,7 @@ let pendingZap = null;
 let zapTimer = null;
 let desk = null; // tempo, câmbio, foguete e manchetes da área de trabalho (o servidor guarda; aqui, a última resposta)
 let deskAt = 0;
+let listNote = LIST_LOADING; // o que a coluna da lista diz enquanto não há lista
 
 // ---------- rotas: a URL guarda seção, categoria e busca ----------
 function parseHash() {
@@ -155,7 +157,7 @@ function render() {
   if (state.view === "home") return renderHome();
   renderRail();
   syncSearch();
-  if (!state.summary) return;
+  if (!state.summary) return showListNote();
   if (state.view !== "live" && state.view !== "show" && !state.summary[state.view].count) {
     return go({ view: "live" }, { replace: true }); // esta lista não tem filmes/séries
   }
@@ -873,24 +875,28 @@ setInterval(() => {
 }, GUIDE_REFRESH_MS);
 
 // ---------- início ----------
+// O início divide o #browse com a lista: o aviso fica guardado para render() trocar a área de trabalho por ele ao sair
+// do início sem lista pronta (senão ela fica espremida na coluna de canais)
+function showListNote(text = listNote) {
+  listNote = text;
+  browseEl.innerHTML = `<p class="note">${esc(text)}</p>`;
+}
+
 async function loadPlaylist(pid) {
   player.stop();
   showCache.clear();
   setState({ pid, summary: null, live: [], show: null });
   render();
-  if (!pid) {
-    browseEl.innerHTML = `<p class="note">Nenhuma lista salva. Adicione uma em “Listas”.</p>`;
-    return;
-  }
+  if (!pid) return showListNote("Nenhuma lista salva. Adicione uma em “Listas”.");
   lastPlaylist.set(pid);
-  browseEl.innerHTML = `<p class="note">Carregando a lista… Na primeira vez pode levar alguns segundos.</p>`;
+  showListNote(LIST_LOADING);
   try {
     const [summary, channels] = await Promise.all([api.catalog(pid), api.live(pid)]);
     if (state.pid !== pid) return;
     setState({ summary, live: live.prepare(channels) });
   } catch (e) {
-    browseEl.innerHTML = `<p class="note">Não foi possível carregar a lista: ${esc(e.message)}</p>`;
-    return;
+    if (state.pid !== pid) return; // já trocou de lista: uma falha que demorou não pode apagar a outra da tela
+    return showListNote(`Não foi possível carregar a lista: ${e.message}`);
   }
   onRoute();
   if (ON_TV) resumeLastChannel();
@@ -1002,5 +1008,5 @@ const deskReady = pidReady.then(() => loadDesk());
 if (parseHash().view === "home" && shouldBoot()) {
   runBoot(bootSteps(listReady, deskReady), { retro: isRetro() }).then(() => { if (state.view === "home") renderHome(); });
 }
-listReady.catch((e) => { browseEl.innerHTML = `<p class="note">Não foi possível abrir as listas: ${esc(e.message)}</p>`; });
+listReady.catch((e) => showListNote(`Não foi possível abrir as listas: ${e.message}`));
 deskReady.catch(() => {});
