@@ -61,7 +61,7 @@ NO_CACHE_TYPES = ("text/html", "text/javascript", "text/css")
 STATIC_TYPES = {".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8"}
 
 _catalog_cache = {}  # playlist id -> {"at", "source", "data": catalog.Catalog}
-_catalog_lock = threading.Lock()
+_catalog_locks = {}  # playlist id -> Lock
 _epg_lock = threading.Lock()
 _playlist_lock = threading.Lock()
 _panels = {}  # playlist id -> xtream.Panel
@@ -340,8 +340,9 @@ def load_catalog(pid):
     if not playlist:
         raise KeyError("Playlist não encontrada")
     source = playlist.get("file") or playlist.get("url")
-    # Um lock só: a página pede resumo e canais juntos, e a lista não pode ser baixada duas vezes
-    with _catalog_lock:
+    # Um lock por lista: a página pede resumo e canais juntos e a lista não pode ser baixada duas vezes, mas um painel
+    # fora do ar leva minutos para desistir e não pode segurar as outras
+    with _catalog_locks.setdefault(pid, threading.Lock()):
         cached = _catalog_cache.get(pid)
         if cached and cached["source"] == source and time.time() - cached["at"] < CACHE_TTL:
             return cached["data"]

@@ -6,9 +6,11 @@ import json
 import socket
 import tempfile
 import threading
+import time
 import unittest
 import urllib.error
 import urllib.request
+from concurrent import futures
 from contextlib import redirect_stdout
 from datetime import datetime, timedelta, timezone
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
@@ -539,6 +541,61 @@ class ListFailureLogTest(unittest.TestCase):
     def test_list_the_dns_cannot_find_says_so(self):
         log = self.failed_log(urllib.error.URLError(socket.gaierror(8, "nodename nor servname provided")))
         self.assertIn("lista Minha: não abriu (nome não encontrado no DNS)", log)
+
+
+class ListLoadingTest(unittest.TestCase):
+    """Cada lista carrega por conta própria: um painel fora do ar leva minutos para desistir."""
+
+    PLAYLISTS = [{"id": "presa", "name": "Presa", "url": "http://presa.example/lista.m3u"},
+                 {"id": "boa", "name": "Boa", "url": "http://boa.example/lista.m3u"}]
+    WAIT_S = 2
+    SLOW_READ_S = 0.2
+
+    def setUp(self):
+        for patch in (mock.patch.object(server, "load_playlists", return_value=self.PLAYLISTS),
+                      mock.patch.object(server, "load_epg", return_value=server.EMPTY_GUIDE),
+                      mock.patch.dict(server._catalog_cache, clear=True),
+                      mock.patch("sys.stdout", io.StringIO())):
+            patch.start()
+            self.addCleanup(patch.stop)
+
+    def test_stuck_list_does_not_hold_the_others(self):
+        reading, release = threading.Event(), threading.Event()
+
+        def read(playlist):
+            if playlist["id"] == "presa":
+                reading.set()
+                release.wait(self.WAIT_S * 3)
+            return PLAYLIST
+
+        with mock.patch.object(server, "read_playlist_source", side_effect=read), \
+             futures.ThreadPoolExecutor(max_workers=2) as pool:
+            try:
+                pool.submit(server.load_catalog, "presa")
+                self.assertTrue(reading.wait(self.WAIT_S))
+                good = pool.submit(server.load_catalog, "boa")
+                done, _ = futures.wait([good], timeout=self.WAIT_S)
+            finally:
+                release.set()
+        self.assertIn(good, done, "a lista presa segurou a outra")
+
+    def test_same_list_asked_twice_at_once_is_read_once(self):
+        reading = threading.Event()
+        reads = []
+
+        def read(playlist):
+            reads.append(playlist["id"])
+            reading.set()
+            time.sleep(self.SLOW_READ_S)  # tempo para o segundo pedido chegar com a leitura em andamento
+            return PLAYLIST
+
+        with mock.patch.object(server, "read_playlist_source", side_effect=read), \
+             futures.ThreadPoolExecutor(max_workers=2) as pool:
+            first = pool.submit(server.load_catalog, "boa")
+            self.assertTrue(reading.wait(self.WAIT_S))
+            second = pool.submit(server.load_catalog, "boa")
+            self.assertIs(first.result(self.WAIT_S), second.result(self.WAIT_S))
+        self.assertEqual(reads, ["boa"])
 
 
 class PageLoadBurstTest(unittest.TestCase):
